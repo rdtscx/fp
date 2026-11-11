@@ -55,8 +55,6 @@ button.copy:hover{color:#7fe3ff;border-color:#2c6d8a}
 .status.partial .dot{background:#38bdf8;animation:pulse 1.2s infinite}
 .status.done{color:#5eead4;border-color:#1b4a3e;background:#081f1a}
 .status.done .dot{background:#2dd4bf}
-.status.cache{color:#c4b5fd;border-color:#3b2f63;background:#120f1f}
-.status.cache .dot{background:var(--violet)}
 .actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 .search{position:relative;display:flex;align-items:center}
 .search .icon{position:absolute;left:9px;width:10px;height:10px;border:1.5px solid var(--dim);border-radius:50%;pointer-events:none}
@@ -81,7 +79,6 @@ h1{font-size:clamp(21px,3vw,31px);margin:5px 0 7px;line-height:1.22;letter-spaci
 .lead{color:var(--muted);font-size:12.5px;margin:0 0 14px;max-width:760px}
 .hero-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:10.5px;color:var(--dim);align-items:center}
 .hero-meta span{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border:1px solid #162432;border-radius:999px;background:#0a131c;max-width:100%;word-break:break-word}
-.cache-pill{color:#c4b5fd;border-color:#3b2f63!important;background:#120f1f!important}
 .live-pill{color:#5eead4;border-color:#1b4a3e!important;background:#081f1a!important}
 .fingerprint-card{background:#08111a;border:1px solid #1b3a4c;border-radius:15px;padding:15px 16px;box-shadow:0 14px 34px rgba(0,0,0,.3)}
 .hash-row{padding:9px 0;border-top:1px dashed #16293a}
@@ -227,7 +224,7 @@ footer p{margin:3px 0}
   <div id="filter-empty" class="empty" hidden>没有匹配的参数</div>
   <footer>
     <p>仅展示当前浏览器实际返回的数据；不支持的接口、失败项和空值已自动隐藏。</p>
-    <p>页面为纯静态，无后端。除公网 IP / 归属地会请求 api.ipify.org、api64.ipify.org、ipwho.is、ipinfo.io 外，数据不上传；缓存仅写入本机 localStorage，10 分钟内刷新直接命中。</p>
+    <p>页面为纯静态，无后端。除公网 IP / 归属地会请求 api.ipify.org、api64.ipify.org、ipwho.is、ipinfo.io 外，数据不上传；每次打开都会重新采集，不使用本地缓存。</p>
   </footer>
 </main>
 
@@ -306,17 +303,10 @@ const SUMMARY = {
 const FP = {};
 let uaHigh = null;
 
-const CACHE_VERSION = 6;
-const CACHE_TTL_MS = 10 * 60 * 1000;
-const CACHE_KEY = 'bfp:report:v6:' + location.pathname;
-
 const UI = {
   status: 'loading',
-  bootMode: 'fresh',
   open: new Set(DEFAULT_OPEN),
   query: '',
-  cacheSavedAt: 0,
-  cachePartial: false,
   allDone: false,
   suppressToggle: false
 };
@@ -441,15 +431,6 @@ function visibleDefs() {
   return SEC_DEFS.filter((d) => STATE.get(d.id).rows.length > 0);
 }
 
-function cacheAgeText(ts) {
-  if (!ts) return '—';
-  const sec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-  if (sec < 60) return '刚刚';
-  const min = Math.floor(sec / 60);
-  if (min < 60) return min + ' 分钟前';
-  return Math.floor(min / 60) + ' 小时前';
-}
-
 function formatDuration(ms) {
   if (ms === null || ms === undefined || !Number.isFinite(ms)) return '—';
   return ms < 1000 ? Math.round(ms) + ' ms' : (ms / 1000).toFixed(1) + ' s';
@@ -472,16 +453,12 @@ function renderHero() {
     ['Fonts', h.fonts], ['Layout', h.layout]
   ].filter((x) => x[1]);
 
-  let cacheNote;
-  if (UI.status === 'cache') {
-    cacheNote = `<span class="cache-pill">缓存命中 · ${esc(cacheAgeText(UI.cacheSavedAt))}</span><span>10 分钟内刷新免等待</span>`;
-  } else if (UI.status === 'partial' && UI.cacheSavedAt) {
-    cacheNote = `<span class="cache-pill">缓存核心 · ${esc(cacheAgeText(UI.cacheSavedAt))}</span><span>正在补充</span>`;
-  } else if (UI.status === 'done') {
-    cacheNote = `<span class="live-pill">实时采集</span><span>已写入本地缓存</span>`;
-  } else {
-    cacheNote = `<span class="live-pill">实时采集</span><span>不支持的项自动隐藏</span>`;
-  }
+  const total = totalRows();
+  const liveNote = UI.status === 'done'
+    ? `<span class="live-pill">实时采集</span><span>${total} 项 · ${formatDuration(META.durationMs)}</span>`
+    : UI.status === 'partial'
+      ? `<span class="live-pill">实时采集</span><span>核心数据已就绪 · 正在补充</span>`
+      : `<span class="live-pill">实时采集</span><span>正在读取浏览器接口</span>`;
 
   const hashBlock = (label, val, primary) => {
     const body = val
@@ -500,11 +477,11 @@ function renderHero() {
       <div>
         <div class="eyebrow">BROWSER FINGERPRINT · REAL VALUES</div>
         <h1>浏览器指纹与真实参数</h1>
-        <p class="lead">自动读取当前浏览器实际可用的接口；不支持、读取失败或空值已隐藏。10 分钟内刷新直接命中缓存。</p>
+        <p class="lead">自动读取当前浏览器实际可用的接口；不支持、读取失败或空值已隐藏。每次打开都会重新采集。</p>
         <div class="hero-meta">
           <span>${esc(gen)}</span>
           <span>${esc(SUMMARY.lang)}</span>
-          ${cacheNote}
+          ${liveNote}
         </div>
       </div>
       <div class="fingerprint-card">
@@ -524,12 +501,11 @@ function renderStatus() {
   let mode = UI.status;
   let label = '';
   if (UI.status === 'loading') label = `采集中 · ${total} 项`;
-  else if (UI.status === 'partial') label = (UI.cacheSavedAt ? '缓存核心' : '核心就绪') + ` · 补充采集中 · ${total} 项`;
-  else if (UI.status === 'cache') label = `缓存 · ${cacheAgeText(UI.cacheSavedAt)} · ${total} 项`;
+  else if (UI.status === 'partial') label = `核心就绪 · 补充采集中 · ${total} 项`;
   else label = `完成 · ${formatDuration(META.durationMs)} · ${total} 项`;
   const el = $('#status');
   el.className = 'status ' + mode;
-  el.title = '缓存有效期 10 分钟；重新采集会清除缓存';
+  el.title = '每次打开都会重新采集';
   $('#status-text').textContent = label;
   $('#progress').classList.toggle('active', mode === 'loading' || mode === 'partial');
 }
@@ -631,7 +607,7 @@ function buildReport() {
   return {
     schema: 'browser-fingerprint-report/2',
     meta: {
-      version: CACHE_VERSION,
+      version: 2,
       generatedAt: META.generatedAt,
       pageUrl: META.pageUrl,
       referrer: META.referrer,
@@ -660,64 +636,6 @@ function buildReport() {
       };
     })
   };
-}
-
-function readCache() {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (!data || data.version !== CACHE_VERSION || !data.report) return null;
-    if (!Number.isFinite(data.savedAt) || Date.now() - data.savedAt > CACHE_TTL_MS) return null;
-    if (data.report.meta && data.report.meta.pageUrl) {
-      try {
-        if (new URL(data.report.meta.pageUrl).origin !== location.origin) return null;
-      } catch (e) { /* 忽略无法解析的旧 URL */ }
-    }
-    return data;
-  } catch (e) {
-    return null;
-  }
-}
-
-function saveCache(partial) {
-  try {
-    const payload = { version: CACHE_VERSION, savedAt: Date.now(), partial: !!partial, report: buildReport() };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
-    UI.cacheSavedAt = payload.savedAt;
-    UI.cachePartial = !!partial;
-  } catch (e) { /* localStorage 不可用或超出配额时静默跳过 */ }
-}
-
-function hydrateCache(data) {
-  const r = data.report || {};
-  const m = r.meta || {};
-  META.generatedAt = m.generatedAt || new Date().toISOString();
-  META.pageUrl = m.pageUrl || location.href;
-  META.referrer = m.referrer || '';
-  META.userAgent = m.userAgent || navigator.userAgent;
-  META.durationMs = (m.durationMs === undefined ? null : m.durationMs);
-  const s = r.summary || {};
-  for (const k of ['browser', 'engine', 'os', 'device', 'screen', 'tz', 'lang', 'gpu', 'cpu']) {
-    if (s[k] !== undefined) SUMMARY[k] = s[k];
-  }
-  SUMMARY.hashes = {
-    stable: null, composite: null, canvas: null, audio: null, webgl: null, fonts: null, layout: null,
-    ...(s.hashes || {})
-  };
-  for (const def of SEC_DEFS) {
-    const st = STATE.get(def.id);
-    st.rows = [];
-    st.done = false;
-    const sec = (r.sections || []).find((x) => x.id === def.id);
-    if (sec) {
-      st.rows = (sec.rows || []).map((row) => ({ ...row }));
-      st.done = !!sec.done;
-    }
-  }
-  UI.cacheSavedAt = data.savedAt || 0;
-  UI.cachePartial = !!data.partial;
-  UI.allDone = !data.partial;
 }
 
 function showToast(msg) {
@@ -764,7 +682,6 @@ function downloadJSON() {
 }
 
 function forceRefresh() {
-  try { localStorage.removeItem(CACHE_KEY); } catch (e) { /* 忽略 */ }
   location.reload();
 }
 
@@ -820,17 +737,6 @@ window.addEventListener('scroll', () => {
   if (scrollRaf) return;
   scrollRaf = requestAnimationFrame(() => { scrollRaf = 0; updateActiveNav(); });
 }, { passive: true });
-
-function refreshCacheAge() {
-  if (UI.status === 'cache' || (UI.status === 'partial' && UI.cacheSavedAt)) {
-    renderStatus();
-    renderHero();
-  }
-}
-setInterval(refreshCacheAge, 15000);
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) refreshCacheAge();
-});
 
 async function run(name, fn) {
   try {
@@ -2246,12 +2152,10 @@ async function phaseA() {
 
   await computeSummaries();
   markDone(PHASE_A_SECTIONS);
-  saveCache(true);
   render();
 }
 
 async function phaseB() {
-  const wasPartial = UI.bootMode === 'partial';
   await Promise.allSettled([
     run('WebGPU', collectWebGPU),
     run('电池', collectBattery),
@@ -2267,9 +2171,8 @@ async function phaseB() {
 
   markAllDone();
   UI.allDone = true;
-  if (!wasPartial) META.durationMs = Math.round(performance.now() - META.startedAt);
-  saveCache(false);
-  UI.status = wasPartial ? 'cache' : 'done';
+  META.durationMs = Math.round(performance.now() - META.startedAt);
+  UI.status = 'done';
   render();
 }
 
@@ -2297,21 +2200,10 @@ async function boot() {
   SUMMARY.lang = (navigator.languages || [navigator.language]).join(', ');
   SUMMARY.screen = `${screen.width}×${screen.height} · DPR ${devicePixelRatio}`;
 
-  const cached = readCache();
-  if (cached) {
-    hydrateCache(cached);
-    UI.bootMode = cached.partial ? 'partial' : 'full';
-    UI.status = cached.partial ? 'partial' : 'cache';
-    UI.allDone = !cached.partial;
-    render();
-    if (cached.partial) {
-      META.startedAt = performance.now();
-      phaseB().catch((e) => console.warn('[phaseB]', e));
-    }
-    return;
-  }
+  try {
+    Object.keys(localStorage).filter((k) => k.indexOf('bfp:report:') === 0).forEach((k) => localStorage.removeItem(k));
+  } catch (e) { /* 清理旧版本缓存失败时忽略 */ }
 
-  UI.bootMode = 'fresh';
   UI.status = 'loading';
   render();
   startFresh().catch((e) => console.warn('[startFresh]', e));
