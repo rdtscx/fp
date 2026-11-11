@@ -97,6 +97,8 @@ h1{font-size:clamp(21px,2.4vw,28px);margin:6px 0 8px;line-height:1.25;letter-spa
 .ip-detail-item{min-width:0;display:flex;flex-direction:column;gap:1px}
 .ip-detail-item b{font-size:9.5px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;font-weight:600}
 .ip-detail-item span{font-size:12px;color:#33404f;word-break:break-word;line-height:1.5}
+.ip-detail-item span em.ip-zh{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:2px;font-family:inherit}
+.ip-detail-item span em.ip-zh.na{color:var(--na)}
 .ip-detail-item span.na{color:var(--na)}
 .mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .mini .chip{font-family:var(--mono);font-size:10px}
@@ -768,6 +770,98 @@ function formatDuration(ms) {
   return ms < 1000 ? Math.round(ms) + ' ms' : (ms / 1000).toFixed(1) + ' s';
 }
 
+const CN_PROVINCES = [
+  ['Inner Mongolia', '内蒙古'], ['Heilongjiang', '黑龙江'], ['Chongqing', '重庆'],
+  ['Beijing', '北京'], ['Tianjin', '天津'], ['Hebei', '河北'], ['Shanxi', '山西'],
+  ['Liaoning', '辽宁'], ['Jilin', '吉林'], ['Shanghai', '上海'], ['Jiangsu', '江苏'],
+  ['Zhejiang', '浙江'], ['Anhui', '安徽'], ['Fujian', '福建'], ['Jiangxi', '江西'],
+  ['Shandong', '山东'], ['Henan', '河南'], ['Hubei', '湖北'], ['Hunan', '湖南'],
+  ['Guangdong', '广东'], ['Guangxi', '广西'], ['Hainan', '海南'], ['Sichuan', '四川'],
+  ['Guizhou', '贵州'], ['Yunnan', '云南'], ['Tibet', '西藏'], ['Xizang', '西藏'],
+  ['Shaanxi', '陕西'], ['Gansu', '甘肃'], ['Qinghai', '青海'], ['Ningxia', '宁夏'],
+  ['Xinjiang', '新疆'], ['Hong Kong', '香港'], ['Macau', '澳门'], ['Macao', '澳门'],
+  ['Taiwan', '台湾']
+];
+
+const CN_CARRIERS = [
+  [/china\s*mobile|chinamobile|\bcmcc\b/i, '移动'],
+  [/china\s*unicom|\bunicom\b/i, '联通'],
+  [/china\s*telecom|chinanet/i, '电信'],
+  [/china\s*broadnet|broadcast(ing)?\s*network|\bcbn\b/i, '广电']
+];
+
+const FOREIGN_ISPS = [
+  [/amazon|\baws\b/i, '亚马逊'],
+  [/google/i, '谷歌'],
+  [/microsoft|azure/i, '微软'],
+  [/cloudflare/i, 'Cloudflare'],
+  [/akamai/i, '阿卡迈'],
+  [/\bfastly\b/i, 'Fastly'],
+  [/digitalocean/i, 'DigitalOcean'],
+  [/\blinode\b/i, 'Linode'],
+  [/\bvultr\b/i, 'Vultr'],
+  [/\bovh\b/i, 'OVH'],
+  [/hetzner/i, 'Hetzner'],
+  [/\bibm\b/i, 'IBM'],
+  [/oracle/i, '甲骨文'],
+  [/alibaba|aliyun|alicloud/i, '阿里云'],
+  [/tencent/i, '腾讯云'],
+  [/huawei/i, '华为云'],
+  [/comcast/i, '康卡斯特'],
+  [/verizon/i, '威瑞森'],
+  [/at&t/i, 'AT&T'],
+  [/t-mobile/i, 'T-Mobile'],
+  [/vodafone/i, '沃达丰'],
+  [/deutsche\s*telekom/i, '德国电信'],
+  [/\borange\b/i, '法国电信'],
+  [/\bntt\b/i, '日本电信电话'],
+  [/kddi/i, 'KDDI'],
+  [/softbank/i, '软银'],
+  [/korea\s*telecom|\bkt\b/i, '韩国电信'],
+  [/sk\s*broadband/i, 'SK 宽带'],
+  [/singtel/i, '新加坡电信'],
+  [/starhub/i, 'StarHub'],
+  [/telstra/i, '澳洲电讯'],
+  [/\boptus\b/i, 'Optus'],
+  [/pccw/i, '电讯盈科'],
+  [/\bhkt\b/i, '香港电讯'],
+  [/hkbn/i, '香港宽频'],
+  [/chunghwa/i, '中华电信'],
+  [/telefonica|telefónica/i, '西班牙电信'],
+  [/telecom\s*italia/i, '意大利电信'],
+  [/british\s*telecom|\bbt\b/i, '英国电信'],
+  [/rogers/i, '罗杰斯'],
+  [/\bbell\s*canada\b/i, '加拿大贝尔'],
+  [/telus/i, '泰卢斯']
+];
+
+function ispZhName(raw, countryCode, countryName) {
+  const text = String(raw || '');
+  if (!text) return null;
+  if (/[\u4e00-\u9fa5]/.test(text)) return text;
+  const cc = (countryCode || '').toUpperCase();
+  let carrier = CN_CARRIERS.find(([re]) => re.test(text));
+  carrier = carrier ? carrier[1] : null;
+  if (!carrier && cc === 'CN') {
+    if (/telecom|chinanet|\bctc\b/i.test(text)) carrier = '电信';
+    else if (/unicom/i.test(text)) carrier = '联通';
+    else if (/mobile|\bcmcc\b/i.test(text)) carrier = '移动';
+    else if (/broadcast|radio\s*&?\s*tv|\bcbn\b/i.test(text)) carrier = '广电';
+  }
+  if (carrier) {
+    const prov = CN_PROVINCES.find(([en]) => new RegExp('\\b' + en + '\\b', 'i').test(text));
+    if (prov) return prov[1] + carrier;
+    return '中国' + carrier + (cc === 'CN' ? '' : '（海外）');
+  }
+  const brand = FOREIGN_ISPS.find(([re]) => re.test(text));
+  if (brand) {
+    const b = brand[1];
+    if (!countryName || b.startsWith(countryName)) return b;
+    return `${countryName} ${b}`;
+  }
+  return null;
+}
+
 function renderHero() {
   const h = SUMMARY.hashes || {};
   const geo = IPSTATE.geo && typeof IPSTATE.geo === 'object' ? IPSTATE.geo : null;
@@ -820,6 +914,25 @@ function renderHero() {
   const geoLoc = geo ? [countryZh, geo.region].filter(Boolean).join(' · ') : null;
   const asnText = geo && geo.asn ? (/^AS/i.test(String(geo.asn)) ? String(geo.asn) : 'AS' + geo.asn) : null;
   const coord = (v) => (typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(4) : v;
+
+  const ispEn = geo ? (geo.isp || geo.org) : null;
+  const ispCn = ispEn ? ispZhName(ispEn, geo.country_code, countryZh) : null;
+  const ispCell = ispEn
+    ? `<span>${esc(ispEn)}${ispCn
+      ? (ispCn === ispEn ? '' : `<em class="ip-zh">${esc(ispCn)}</em>`)
+      : '<em class="ip-zh na">未提供中文名</em>'}</span>`
+    : '<span class="na">未提供</span>';
+  const detailItems = [
+    ['网络服务商', ispCell, true],
+    ['位置（归属地）', geoLoc, false],
+    ['区', geo ? geo.city : null, false],
+    ['街道', geo ? geo.street : null, false],
+    ['经度', geo ? coord(geo.lon) : null, false],
+    ['纬度', geo ? coord(geo.lat) : null, false],
+    ['ASN', asnText, false],
+    ['时区', geo ? geo.timezone : null, false]
+  ];
+
   const ipDetail = `
     <div class="ip-detail">
       <div class="ip-detail-head">
@@ -829,16 +942,7 @@ function renderHero() {
         ${geo && geo.source ? `<span class="ip-source">${esc(geo.source)}</span>` : ''}
       </div>
       <div class="ip-detail-grid">
-        ${[
-          ['网络服务商', geo ? (geo.isp || geo.org) : null],
-          ['位置（归属地）', geoLoc],
-          ['区', geo ? geo.city : null],
-          ['街道', geo ? geo.street : null],
-          ['经度', geo ? coord(geo.lon) : null],
-          ['纬度', geo ? coord(geo.lat) : null],
-          ['ASN', asnText],
-          ['时区', geo ? geo.timezone : null]
-        ].map(([k, v]) => `<div class="ip-detail-item"><b>${esc(k)}</b><span>${field(v)}</span></div>`).join('')}
+        ${detailItems.map(([k, v, raw]) => `<div class="ip-detail-item"><b>${esc(k)}</b>${raw ? v : `<span>${field(v)}</span>`}</div>`).join('')}
       </div>
     </div>`;
 
