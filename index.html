@@ -2943,6 +2943,7 @@ async function boot() {
 
   try {
     Object.keys(localStorage).filter((k) => k.indexOf('bfp:report:') === 0).forEach((k) => localStorage.removeItem(k));
+    localStorage.removeItem('fp:rev:v1');
   } catch (e) { /* 清理旧版本缓存失败时忽略 */ }
 
   UI.status = 'loading';
