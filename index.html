@@ -2367,7 +2367,7 @@ function gatherLocalIPs() {
   return lanPromise;
 }
 
-const REV_CACHE_KEY = 'fp:rev:v1';
+const REV_CACHE_KEY = 'fp:rev:v2';
 const REV_TTL = 30 * 24 * 3600 * 1000;
 
 function readRevCache() {
@@ -2392,24 +2392,30 @@ async function reverseGeo(lat, lon) {
   if (hit && Date.now() - hit.t < REV_TTL) {
     return { district: hit.d || null, street: hit.s || null, cached: true };
   }
-  let g = null;
-  try {
-    g = await fetchJSON('https://photon.komoot.io/reverse?lat=' + lat + '&lon=' + lon, 3000);
-  } catch (e) {
+  const [pr, br] = await Promise.allSettled([
+    fetchJSON('https://photon.komoot.io/reverse?lat=' + lat + '&lon=' + lon + '&lang=default', 3000),
+    fetchJSON('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=zh-Hans', 3000)
+  ]);
+  const props = (pr.status === 'fulfilled' && pr.value && pr.value.features && pr.value.features[0] && pr.value.features[0].properties) || null;
+  const bdc = (br.status === 'fulfilled' && br.value) ? br.value : null;
+  if (!props && !bdc) {
     return hit ? { district: hit.d || null, street: hit.s || null, cached: true } : null;
   }
-  const props = (g && g.features && g.features[0] && g.features[0].properties) || null;
-  if (!props) return null;
-  const candidate = (re) => [props.district, props.city, props.county, props.state, props.locality]
-    .find((v) => typeof v === 'string' && re.test(v)) || null;
-  const district = candidate(/(区|县|旗)$/) || null;
-  const street = [props.district, props.locality, props.street]
-    .find((v) => typeof v === 'string' && /(街道|镇|乡)$/.test(v)) || null;
-  cache[key] = { t: Date.now(), d: district, s: street };
+  const pick = (arr, re) => arr.find((v) => typeof v === 'string' && re.test(v)) || null;
+  const district = props
+    ? pick([props.district, props.city, props.county, props.state], /(区|县|旗)$/)
+    : null;
+  const districtFinal = district
+    || (bdc && pick([bdc.locality, bdc.city], /(区|县|旗)$/))
+    || null;
+  const street = props
+    ? pick([props.district, props.locality, props.street], /(街道|镇|乡)$/)
+    : null;
+  cache[key] = { t: Date.now(), d: districtFinal, s: street };
   const keys = Object.keys(cache);
   if (keys.length > 400) keys.slice(0, keys.length - 400).forEach((k) => delete cache[k]);
   writeRevCache(cache);
-  return { district, street, cached: false };
+  return { district: districtFinal, street, cached: false };
 }
 
 async function refreshPublicIP() {
@@ -2475,7 +2481,7 @@ async function refreshPublicIPOnce() {
     if (rev && IPSTATE.geo === g) {
       g.district = rev.district;
       g.street = rev.street;
-      g.rev = 'photon.komoot.io';
+      g.rev = 'photon.komoot.io / bigdatacloud.net';
       scheduleRender();
     }
   }
