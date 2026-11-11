@@ -140,6 +140,10 @@ h1{font-size:clamp(21px,3vw,31px);margin:5px 0 7px;line-height:1.22;letter-spaci
 .chip{display:inline-flex;align-items:center;gap:4px;background:#0b1721;border:1px solid #1a2c3c;border-radius:6px;padding:2px 7px;font-size:10.5px;color:#cfe6f8;word-break:break-word;max-width:100%}
 .chip.ok{background:#081f1a;border-color:#1b4a3e;color:#a7f3d0}
 .fgrid{display:flex;flex-wrap:wrap;gap:5px}
+.fgrid .chip b{font-weight:500}
+.fgrid .chip i{font-style:normal;font-size:9px;color:#6f9e8f;margin-left:4px;opacity:.9}
+.hint{display:block;font-size:9.5px;color:#5f7d96;margin-top:3px;line-height:1.45}
+.hint::before{content:"用途 · ";color:#3e566b}
 pre.json{margin:0;padding:9px 11px;background:#08111a;border:1px solid #16222f;border-radius:8px;font-family:var(--mono);font-size:10.5px;color:#b9d6ee;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto}
 .muted{color:var(--dim);font-size:11.5px}
 
@@ -296,7 +300,7 @@ const META = {
 
 const SUMMARY = {
   browser: '—', engine: '—', os: '—', device: '—', screen: '—',
-  tz: '—', lang: '—', gpu: '—', cpu: '—',
+  tz: '—', lang: '—', gpu: '—',
   hashes: { stable: null, composite: null, canvas: null, audio: null, webgl: null, fonts: null, layout: null }
 };
 
@@ -365,6 +369,309 @@ function clean(v) {
   return v;
 }
 
+const SECTION_HINTS = {
+  browser: '浏览器标识', hardware: '设备信息', screen: '显示参数', locale: '区域格式',
+  graphics: '图形参数', hashes: '指纹比对', fonts: '字体指纹', audio: '音频参数',
+  media: '媒体能力', network: '网络信息', storage: '存储状态', permissions: '权限状态',
+  features: '浏览器能力', css: '样式能力', plugins: '插件信息', webrtc: '网络候选',
+  page: '页面信息', privacy: '隐私信号'
+};
+
+const HINTS = [
+  [/^User-Agent$/, '浏览器身份串'],
+  [/^UA 字符串长度$/, '身份串长度'],
+  [/^(appName|appVersion|appCodeName|product|productSub|vendor|platform（旧字段）)$/, '传统浏览器字段'],
+  [/^UA 中识别到的浏览器\/应用$/, 'UA 解析结果'],
+  [/^渲染引擎$/, '页面渲染内核'],
+  [/^内核版本$/, '内核版本号'],
+  [/^浏览器品牌\/版本$/, '浏览器产品版本'],
+  [/^Android WebView 判定$/, '内嵌浏览器判定'],
+  [/^应用内浏览器 \/ 容器$/, '应用内浏览器'],
+  [/^User-Agent Client Hints$/, '浏览器版本提示'],
+  [/^UA-CH platformVersion$/, '系统版本号'],
+  [/^UA-CH/, '浏览器精确版本'],
+  [/^pdfViewerEnabled$/, '内置 PDF 支持'],
+  [/^webdriver$/, '自动化标识'],
+
+  [/^操作系统$/, '系统与版本'],
+  [/^navigator\.platform$/, '平台标识'],
+  [/^UA-CH platformVersion$/, '系统版本号'],
+  [/^CPU 架构$/, 'CPU 架构'],
+  [/^CPU 位数$/, 'CPU 位数'],
+  [/^WOW64$/, '32 位兼容'],
+  [/^设备型号 model$/, '设备型号'],
+  [/^设备形态 formFactors$/, '设备形态'],
+  [/^navigator\.maxTouchPoints$/, '触控点数'],
+  [/^指针与悬停媒体查询$/, '指针类型'],
+  [/^已连接游戏手柄$/, '手柄状态'],
+  [/^电池/, '电池状态'],
+
+  [/^screen\.width/, '屏幕尺寸'],
+  [/^screen\.avail$/, '可用屏幕区'],
+  [/^screen\.colorDepth$/, '颜色位深'],
+  [/^screen\.pixelDepth$/, '像素位深'],
+  [/^屏幕方向$/, '横竖屏状态'],
+  [/^screen\.isExtended$/, '扩展屏状态'],
+  [/^devicePixelRatio$/, '像素密度比'],
+  [/^innerWidth/, '视口尺寸'],
+  [/^outerWidth/, '窗口尺寸'],
+  [/^screenX/, '窗口位置'],
+  [/^scrollX/, '滚动位置'],
+  [/^文档滚动尺寸$/, '页面尺寸'],
+  [/^visualViewport$/, '视觉视口'],
+  [/^CSS 单位实测/, 'CSS 单位换算'],
+  [/^媒体查询匹配结果/, '显示与偏好适配'],
+
+  [/^navigator\.language$/, '首选语言'],
+  [/^navigator\.languages$/, '语言列表'],
+  [/^Intl locale$/, '区域格式'],
+  [/^日历/, '日历类型'],
+  [/^数字系统/, '数字写法'],
+  [/^时区 \(timeZone\)$/, '系统时区'],
+  [/^时区偏移/, 'UTC 偏移'],
+  [/^夏令时差异$/, '夏令时规则'],
+  [/^时区名称/, '时区名称'],
+  [/^(日期格式|时间格式|日期时间格式|Date\.toString\(\))$/, '本地格式样本'],
+  [/^数字格式/, '数字格式'],
+  [/^0\.1 \+ 0\.2/, '浮点精度'],
+  [/^货币格式/, '货币格式'],
+  [/^百分比格式$/, '百分比格式'],
+  [/^Collator|^排序示例/, '排序规则'],
+  [/^文档文字方向$/, '文字方向'],
+
+  [/^WebGL 上下文$|^使用的上下文$/, '图形接口类型'],
+  [/^VENDOR（屏蔽）$/, '显卡厂商标识'],
+  [/^RENDERER（屏蔽）$/, '渲染器标识'],
+  [/^UNMASKED_VENDOR_WEBGL$/, '真实显卡厂商'],
+  [/^UNMASKED_RENDERER_WEBGL$/, '真实显卡型号'],
+  [/^VERSION$/, '图形接口版本'],
+  [/^SHADING_LANGUAGE_VERSION$/, '着色器语言版本'],
+  [/^上下文属性$/, '绘图缓冲配置'],
+  [/^MAX_VERTEX_UNIFORM_VECTORS|^MAX_FRAGMENT_UNIFORM_VECTORS/, '着色器常量上限'],
+  [/^MAX_COMBINED_UNIFORM_BLOCKS|^MAX_VERTEX_UNIFORM_BLOCKS|^MAX_FRAGMENT_UNIFORM_BLOCKS|^MAX_UNIFORM_BUFFER_BINDINGS|^MAX_UNIFORM_BLOCK_SIZE/, '常量缓冲上限'],
+  [/^MAX_COMBINED_TEXTURE_IMAGE_UNITS|^MAX_VERTEX_TEXTURE_IMAGE_UNITS|^MAX_TEXTURE_IMAGE_UNITS/, '纹理单元上限'],
+  [/^MAX_VERTEX_ATTRIBS|^MAX_VERTEX_OUTPUT_COMPONENTS/, '顶点接口上限'],
+  [/^MAX_FRAGMENT_INPUT_COMPONENTS/, '片元接口上限'],
+  [/^MAX_VARYING_VECTORS$/, '插值变量上限'],
+  [/^MAX_TRANSFORM_FEEDBACK_/, '变换反馈上限'],
+  [/^MAX_TEXTURE_|^MAX_CUBE_MAP_TEXTURE_SIZE|^MAX_3D_TEXTURE_SIZE|^MAX_ARRAY_TEXTURE_LAYERS/, '纹理资源上限'],
+  [/^MAX_RENDERBUFFER_SIZE|^MAX_VIEWPORT_DIMS|^ALIASED_LINE_WIDTH_RANGE|^ALIASED_POINT_SIZE_RANGE/, '绘制尺寸限制'],
+  [/^MAX_DRAW_BUFFERS|^MAX_COLOR_ATTACHMENTS/, '多目标渲染上限'],
+  [/^MAX_SAMPLES|^SAMPLE_BUFFERS|^SAMPLES|^SUBPIXEL_BITS/, '采样配置'],
+  [/^(RED|GREEN|BLUE|ALPHA|DEPTH|STENCIL)_BITS$/, '颜色缓冲位数'],
+  [/^MAX_ELEMENT_INDEX$|^MAX_CLIENT_WAIT_TIMEOUT_WEBGL$/, '缓冲与同步上限'],
+  [/^MAX_TEXTURE_LOD_BIAS$/, '纹理精度'],
+  [/^MAX_VERTEX_/, '顶点处理上限'],
+  [/^MAX_FRAGMENT_/, '片元处理上限'],
+  [/^MAX_/, '图形资源上限'],
+  [/^着色器精度/, '着色器计算精度'],
+  [/^WebGL 扩展数量$|^WebGL 扩展列表$/, '可选图形扩展'],
+  [/^WebGL 参数哈希/, '图形参数指纹'],
+  [/^WebGPU/, '现代图形接口'],
+
+  [/^Canvas 2D 哈希|^Canvas 像素哈希/, 'Canvas 指纹'],
+  [/^Canvas dataURL 长度$/, 'Canvas 数据量'],
+  [/^Canvas 尺寸$/, 'Canvas 尺寸'],
+  [/^布局几何哈希/, '布局指纹'],
+  [/^布局几何原始值$/, '布局度量'],
+  [/^字体列表哈希/, '字体指纹'],
+  [/^音频指纹哈希/, '音频指纹'],
+  [/^音频指纹求和值$/, '音频特征值'],
+  [/^稳定设备指纹/, '设备级比对'],
+  [/^综合指纹/, '综合比对'],
+
+  [/^检测到字体$/, '已装字体'],
+  [/^基线宽度/, '字体度量基线'],
+
+  [/^AudioContext\.sampleRate$/, '输出采样率'],
+  [/^AudioContext\.state$/, '音频状态'],
+  [/^baseLatency|^outputLatency/, '输出延迟'],
+  [/^destination\.maxChannelCount$/, '声道数'],
+  [/^OfflineAudioContext 渲染/, '音频渲染指纹'],
+  [/^语音合成 voices$/, '语音音色'],
+
+  [/^支持的约束$/, '媒体约束'],
+  [/^设备数量$/, '设备数量'],
+  [/^设备列表$/, '设备清单'],
+  [/^视频编解码$/, '视频格式'],
+  [/^音频编解码$/, '音频格式'],
+  [/^MediaRecorder/, '媒体录制'],
+  [/^MediaSource/, '流媒体播放'],
+
+  [/^connection\.type$/, '接入类型'],
+  [/^effectiveType$/, '网络质量'],
+  [/^rtt/, '网络延迟'],
+  [/^downlink/, '下行带宽'],
+  [/^saveData$/, '省流模式'],
+  [/^navigator\.onLine$/, '在线状态'],
+  [/^公网 IPv4$/, '出口地址'],
+  [/^公网 IPv6/, '出口地址'],
+  [/^出口归属地/, 'IP 归属'],
+
+  [/^localStorage/, '本地存储'],
+  [/^sessionStorage/, '会话存储'],
+  [/^Cookie 可写$/, 'Cookie 可用'],
+  [/^IndexedDB/, '结构化存储'],
+  [/^存储配额/, '可用容量'],
+  [/^已使用 usage$/, '已用容量'],
+  [/^usageDetails$/, '占用明细'],
+  [/^存储已持久化$/, '持久化状态'],
+
+  [/^geolocation$/, '定位权限'],
+  [/^notifications$/, '通知权限'],
+  [/^camera$/, '摄像头权限'],
+  [/^microphone$/, '麦克风权限'],
+  [/^clipboard-read$/, '剪贴板读取'],
+  [/^clipboard-write$/, '剪贴板写入'],
+  [/^midi$/, 'MIDI 权限'],
+  [/^background-sync$/, '后台同步'],
+  [/^persistent-storage$/, '持久存储'],
+  [/^accelerometer$/, '加速度计'],
+  [/^gyroscope$/, '陀螺仪'],
+  [/^magnetometer$/, '磁力计'],
+  [/^payment-handler$/, '支付权限'],
+  [/^screen-wake-lock$/, '屏幕常亮'],
+  [/^idle-detection$/, '空闲检测'],
+  [/^storage-access$|^top-level-storage-access$/, '跨站存储'],
+  [/^window-management$/, '窗口管理'],
+  [/^local-fonts$/, '本地字体'],
+  [/^push$/, '推送权限'],
+  [/^display-capture$/, '屏幕捕获'],
+
+  [/^核心运行时$/, 'JS 引擎能力'],
+  [/^网络与通信$/, '网络通信能力'],
+  [/^图形、媒体与语音$/, '图形媒体能力'],
+  [/^存储与文件$/, '存储文件能力'],
+  [/^硬件、传感器与系统$/, '硬件传感器'],
+  [/^安全、支付与隐私$/, '安全与认证'],
+  [/^Intl 国际化$/, '区域格式能力'],
+  [/^支持的 CSS 特性$/, '样式能力'],
+
+  [/^插件$/, '插件清单'],
+  [/^MIME 类型$/, 'MIME 清单'],
+  [/^内置 PDF 查看器$/, 'PDF 支持'],
+  [/^ICE 候选地址$/, '本地网络候选'],
+
+  [/^页面标题$/, '文档标题'],
+  [/^URL$/, '页面地址'],
+  [/^Origin$/, '源站标识'],
+  [/^协议$/, '传输协议'],
+  [/^端口$/, '服务端口'],
+  [/^路径$/, '页面路径'],
+  [/^查询串$/, 'URL 参数'],
+  [/^来源页/, '引荐来源'],
+  [/^字符集$/, '文本编码'],
+  [/^contentType$/, '文档类型'],
+  [/^兼容模式$/, '渲染模式'],
+  [/^readyState$/, '加载状态'],
+  [/^visibilityState$/, '可见状态'],
+  [/^document\.hidden$/, '隐藏状态'],
+  [/^document\.hasFocus/, '焦点状态'],
+  [/^lastModified$/, '修改时间'],
+  [/^isSecureContext$/, '安全上下文'],
+  [/^crossOriginIsolated$/, '跨源隔离'],
+  [/^originAgentCluster$/, '源隔离'],
+  [/^cookieEnabled$/, 'Cookie 状态'],
+  [/^userActivation$/, '交互状态'],
+  [/^导航类型$/, '导航方式'],
+  [/^重定向次数$/, '重定向计数'],
+  [/^transferSize|^encodedBodySize|^decodedBodySize/, '传输体积'],
+  [/^DOMContentLoaded|^loadEventEnd|^导航总耗时/, '加载耗时'],
+  [/^performance\.timeOrigin$/, '计时基准'],
+  [/^资源请求条目数$/, '资源请求数'],
+  [/^页面 JS 堆用量$/, '脚本内存占用'],
+  [/^serverTiming$/, '服务端耗时'],
+
+  [/^navigator\.doNotTrack$/, '禁止追踪信号'],
+  [/^navigator\.globalPrivacyControl$/, '隐私偏好信号'],
+  [/^navigator\.webdriver$/, '自动化标识'],
+  [/^浏览器专属对象$/, '浏览器环境标识'],
+  [/^Brave isBrave/, 'Brave 识别'],
+  [/^cookieDeprecationLabel/, 'Cookie 策略']
+];
+
+function hintFor(sec, label) {
+  for (const [re, text] of HINTS) {
+    if (re.test(label)) return text;
+  }
+  return SECTION_HINTS[sec] || '指纹参数';
+}
+
+const FEATURE_HINTS = {
+  'WebAssembly': '字节码', 'SharedArrayBuffer': '共享内存', 'Atomics': '原子并发', 'BigInt64Array': '64 位整数',
+  'ResizeObserver': '尺寸监听', 'IntersectionObserver': '可见监听', 'MutationObserver': 'DOM 监听', 'PerformanceObserver': '性能监听',
+  'requestIdleCallback': '空闲回调', 'scheduler': '任务调度', 'crypto.subtle': '加密 API', 'crypto.randomUUID': '随机 ID',
+  'Trusted Types': 'XSS 防护', 'Navigation API': '导航控制', 'View Transitions': '页面转场', 'Element.setHTML (Sanitizer)': '安全 HTML',
+  'fetch': '网络请求', 'WebSocket': '双向通信', 'WebTransport': '新型传输', 'EventSource': '服务端推送',
+  'ReadableStream': '流式读取', 'TransformStream': '流转换', 'CompressionStream': '压缩流', 'DecompressionStream': '解压流',
+  'BroadcastChannel': '同源广播', 'MessageChannel': '跨线程消息', 'Web Locks': '跨标签锁', 'Service Worker': '离线代理',
+  'Push Manager': '推送订阅', 'Background Sync': '后台同步', 'Periodic Sync': '周期同步', 'Background Fetch': '后台下载', 'Cookie Store': '异步 Cookie',
+  'WebGL': '3D 绘图', 'WebGL2': '3D 绘图 2', 'WebGPU': '现代 GPU', 'OffscreenCanvas': '离屏绘图',
+  'Web Audio': '音频处理', 'AudioWorklet': '音频线程', 'MediaDevices': '媒体设备', 'getUserMedia': '采集音视频',
+  'getDisplayMedia': '屏幕共享', 'MediaRecorder': '录制媒体', 'MediaSource': '流媒体', 'ManagedMediaSource': '托管流媒体',
+  'MediaCapabilities': '媒体能力查询', 'WebCodecs (VideoEncoder)': '底层编解码', 'Picture-in-Picture': '画中画',
+  'Document PiP': '文档画中画', 'Fullscreen API': '全屏', 'Canvas Capture Stream': '画布推流', 'Speech Synthesis': '语音合成',
+  'Speech Recognition': '语音识别', 'WebXR': 'VR/AR',
+  'localStorage': '本地键值', 'sessionStorage': '会话存储', 'IndexedDB': '结构化数据库', 'CacheStorage': '缓存存储',
+  'Storage API': '存储配额', 'Storage Buckets': '存储分桶', 'OPFS': '源私有文件', 'File System Access': '文件读写',
+  'FileReader': '读取文件', 'Drag and Drop': '拖放', 'Clipboard API': '剪贴板', 'Web Share': '系统分享',
+  'Gamepad API': '手柄输入', 'Vibration API': '振动', 'Battery Status': '电池状态', 'Network Information': '网络信息',
+  'Geolocation': '定位', 'Device Orientation': '方向传感器', 'Device Motion': '运动传感器', 'Ambient Light Sensor': '环境光',
+  'Gyroscope': '陀螺仪', 'Accelerometer': '加速度计', 'Magnetometer': '磁力计', 'Proximity Sensor': '距离传感器',
+  'Bluetooth': '蓝牙', 'USB': 'USB', 'Serial': '串口', 'HID': '输入设备', 'NFC': '近场通信',
+  'Idle Detection': '空闲检测', 'Screen Wake Lock': '屏幕常亮', 'Screen Orientation Lock': '方向锁定',
+  'Multi-Screen Window Placement': '多屏窗口', 'Window Controls Overlay': '窗口控件', 'EyeDropper': '取色器',
+  'Contact Picker': '联系人选择', 'Local Font Access': '本地字体', 'Compute Pressure': '设备压力',
+  'WebAuthn': '无密码认证', 'Credential Management': '凭据管理', 'Payment Request': '支付请求', 'WebDriver': '自动化标识',
+  'Permissions API': '权限查询', 'Notifications': '系统通知', 'Storage Access API': '跨站存储', 'FedCM': '联邦登录',
+  'Fenced Frames': '隔离广告', 'Private Aggregation': '隐私聚合',
+  'Intl': '国际化', 'Intl.DateTimeFormat': '日期格式', 'Intl.NumberFormat': '数字格式', 'Intl.Collator': '排序规则',
+  'Intl.PluralRules': '复数规则', 'Intl.RelativeTimeFormat': '相对时间', 'Intl.ListFormat': '列表格式',
+  'Intl.Segmenter': '文本分词', 'Intl.DisplayNames': '语言名称', 'Intl.Locale.getWeekInfo': '每周规则'
+};
+
+function featureHint(name) {
+  if (FEATURE_HINTS[name]) return FEATURE_HINTS[name];
+  if (/^Intl\./.test(name)) return '国际化';
+  if (/WebGL|WebGPU|Canvas|Graphics/.test(name)) return '图形';
+  if (/Audio|Media|Speech|Video|Codec/.test(name)) return '媒体';
+  if (/Storage|Cache|IndexedDB|File/.test(name)) return '存储';
+  if (/Bluetooth|USB|Serial|HID|NFC/.test(name)) return '设备接口';
+  if (/Sensor|Gyroscope|Accelerometer|Magnetometer|Orientation|Motion/.test(name)) return '传感器';
+  if (/Payment|Credential|Auth|FedCM|Identity/.test(name)) return '认证支付';
+  if (/Worker|Locks|Broadcast|Message/.test(name)) return '并发通信';
+  if (/Permission|Notification|Privacy|Aggregation/.test(name)) return '隐私权限';
+  return '浏览器能力';
+}
+
+function mediaHint(name) {
+  if (/prefers-color-scheme/.test(name)) return '深色模式';
+  if (/prefers-reduced-motion/.test(name)) return '减少动画';
+  if (/prefers-reduced-transparency/.test(name)) return '减少透明';
+  if (/prefers-contrast/.test(name)) return '高对比';
+  if (/forced-colors/.test(name)) return '强制配色';
+  if (/inverted-colors/.test(name)) return '反色模式';
+  if (/color-gamut/.test(name)) return '色域范围';
+  if (/dynamic-range/.test(name)) return '动态范围';
+  if (/pointer|hover/.test(name)) return '指针方式';
+  if (/display-mode/.test(name)) return '显示模式';
+  if (/orientation/.test(name)) return '屏幕方向';
+  if (/resolution/.test(name)) return '屏幕分辨率';
+  if (/monochrome/.test(name)) return '单色屏';
+  if (/scripting/.test(name)) return '脚本支持';
+  if (/update/.test(name)) return '刷新速度';
+  if (/overflow/.test(name)) return '滚动溢出';
+  return '显示适配';
+}
+
+function cssHint(name) {
+  if (/grid|flex|subgrid|gap|aspect-ratio|container|position|scrollbar-gutter|overscroll|scroll-behavior/.test(name)) return '布局';
+  if (/^selector|:has|:is|:where|nesting/.test(name)) return '选择器';
+  if (/color|oklch|lab|hwb|accent|forced-color/.test(name)) return '颜色';
+  if (/text-wrap|backdrop-filter|view-transition|filter/.test(name)) return '渲染效果';
+  return '样式能力';
+}
+
 function add(secId, label, value, source, opts) {
   const st = STATE.get(secId);
   if (!st) return null;
@@ -374,7 +681,10 @@ function add(secId, label, value, source, opts) {
   let supported;
   if (o.type === 'features') {
     const arr = Array.isArray(value) ? value : [];
-    const items = arr.filter((x) => x && x.ok === true);
+    const items = arr.filter((x) => x && x.ok === true).map((x) => ({
+      ...x,
+      hint: o.hint || (secId === 'css' ? cssHint(x.name) : secId === 'screen' ? mediaHint(x.name) : featureHint(x.name))
+    }));
     if (!items.length) return null;
     v = items;
     total = arr.length;
@@ -383,7 +693,7 @@ function add(secId, label, value, source, opts) {
     v = clean(value);
     if (v === undefined) return null;
   }
-  const row = { label, value: v, source, ...o, total, supported };
+  const row = { label, value: v, source, ...o, total, supported, hint: o.hint || hintFor(secId, label) };
   st.rows.push(row);
   scheduleRender();
   return row;
@@ -398,7 +708,7 @@ function scheduleRender() {
 function fmtValue(v, row) {
   if (row && row.type === 'features') {
     const items = Array.isArray(v) ? v : [];
-    return `<div class="fgrid">${items.map((it) => `<span class="chip ok" title="${esc(it.expr || it.name)}">${esc(it.name)}</span>`).join('')}</div>`;
+    return `<div class="fgrid">${items.map((it) => `<span class="chip ok" title="${esc(it.expr || it.name)}${it.hint ? ' · ' + it.hint : ''}"><b>${esc(it.name)}</b>${it.hint ? `<i>${esc(it.hint)}</i>` : ''}</span>`).join('')}</div>`;
   }
   if (ArrayBuffer.isView(v)) v = Array.from(v);
   if (Array.isArray(v)) {
@@ -420,7 +730,8 @@ function renderRow(r) {
     const ratio = r.total ? `<span class="ratio">${r.supported}/${r.total}</span>` : '';
     return `<div class="row"><div class="k"><span class="label">${esc(r.label)}</span>${ratio}<span class="src">${esc(r.source)}</span></div><div class="vcell">${fmtValue(r.value, r)}</div></div>`;
   }
-  return `<div class="row"><div class="k"><span class="label">${esc(r.label)}</span><span class="src">${esc(r.source)}</span></div><div class="vcell">${fmtValue(r.value, r)}</div></div>`;
+  const hint = r.hint ? `<div class="hint">${esc(r.hint)}</div>` : '';
+  return `<div class="row"><div class="k"><span class="label">${esc(r.label)}</span><span class="src">${esc(r.source)}</span></div><div class="vcell">${fmtValue(r.value, r)}${hint}</div></div>`;
 }
 
 function totalRows() {
@@ -446,7 +757,7 @@ function renderHero() {
     ['屏幕', SUMMARY.screen],
     ['时区', SUMMARY.tz],
     ['GPU', SUMMARY.gpu],
-    ['CPU / 内存', SUMMARY.cpu]
+    ['语言', SUMMARY.lang]
   ];
   const minis = [
     ['Canvas', h.canvas], ['Audio', h.audio], ['WebGL', h.webgl],
@@ -480,7 +791,6 @@ function renderHero() {
         <p class="lead">自动读取当前浏览器实际可用的接口；不支持、读取失败或空值已隐藏。每次打开都会重新采集。</p>
         <div class="hero-meta">
           <span>${esc(gen)}</span>
-          <span>${esc(SUMMARY.lang)}</span>
           ${liveNote}
         </div>
       </div>
@@ -631,7 +941,8 @@ function buildReport() {
           type: r.type || 'value',
           total: r.total,
           supported: r.supported,
-          copy: r.copy || undefined
+          copy: r.copy || undefined,
+          hint: r.hint || undefined
         }))
       };
     })
@@ -970,13 +1281,8 @@ function collectHardware() {
     add('hardware', '设备形态 formFactors', (uaHigh.formFactors && uaHigh.formFactors.length) ? uaHigh.formFactors : '（空）', 'getHighEntropyValues(["formFactors"])');
   }
 
-  add('hardware', 'navigator.hardwareConcurrency', navigator.hardwareConcurrency || '不可用', 'navigator.hardwareConcurrency');
-  add('hardware', 'navigator.deviceMemory (GB)', navigator.deviceMemory === undefined ? '不可用（该浏览器未暴露）' : navigator.deviceMemory, 'navigator.deviceMemory');
   add('hardware', 'navigator.maxTouchPoints', navigator.maxTouchPoints, 'navigator.maxTouchPoints');
 
-  const cores = navigator.hardwareConcurrency;
-  const memory = navigator.deviceMemory;
-  SUMMARY.cpu = [cores ? cores + ' 核' : null, memory ? memory + ' GB' : null].filter(Boolean).join(' / ') || '—';
   add('hardware', '指针与悬停媒体查询', {
     'pointer: coarse': matchMedia('(pointer: coarse)').matches,
     'pointer: fine': matchMedia('(pointer: fine)').matches,
@@ -1859,7 +2165,7 @@ function collectPage() {
   add('page', '资源请求条目数', performance.getEntriesByType('resource').length, 'performance.getEntriesByType("resource")');
 
   if (performance.memory) {
-    add('page', 'JS 堆内存 (performance.memory)', {
+    add('page', '页面 JS 堆用量', {
       jsHeapSizeLimit: performance.memory.jsHeapSizeLimit,
       totalJSHeapSize: performance.memory.totalJSHeapSize,
       usedJSHeapSize: performance.memory.usedJSHeapSize
@@ -2077,8 +2383,6 @@ async function computeSummaries() {
     fonts: FP.fontsHash || null,
     screen: [screen.width, screen.height, screen.availWidth, screen.availHeight, screen.colorDepth],
     dpr: Number(devicePixelRatio.toFixed(3)),
-    cores: navigator.hardwareConcurrency || null,
-    memory: navigator.deviceMemory || null,
     touch: navigator.maxTouchPoints,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     languages: navigator.languages,
