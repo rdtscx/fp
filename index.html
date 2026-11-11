@@ -780,9 +780,9 @@ function renderHero() {
     ['系统', SUMMARY.os],
     ['设备', SUMMARY.device],
     ['屏幕', SUMMARY.screen],
-    ['网络IP', ipMain],
     ['GPU', SUMMARY.gpu],
-    ['语言', SUMMARY.lang]
+    ['语言', SUMMARY.lang],
+    ['网络IP', ipMain]
   ];
   const minis = [
     ['Canvas', h.canvas], ['Audio', h.audio], ['WebGL', h.webgl],
@@ -853,13 +853,13 @@ function renderHero() {
         <div class="stat-grid">
           ${stats.map(([k, v]) => `<div class="stat${k === '网络IP' ? ' stat-ip' : ''}"><b>${esc(k)}</b><span>${esc(v || '—')}</span></div>`).join('')}
         </div>
+        ${ipDetail}
       </div>
       <div class="fingerprint-card">
         ${hashBlock('稳定设备指纹 · SHA-256', h.stable, true)}
         ${hashBlock('综合指纹（含 UA 版本）', h.composite, false)}
       </div>
     </div>
-    ${ipDetail}
     ${miniHtml}`;
 }
 
