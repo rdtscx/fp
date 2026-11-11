@@ -94,7 +94,7 @@ footer{color:#5f7891;font-size:11.5px;text-align:center;margin-top:26px;line-hei
   </div>
   <div id="sections"></div>
   <footer>
-    本页为纯静态页面，无后端；除“公网 IP”模块会向 api.ipify.org / api64.ipify.org / ipapi.co 发起请求外，采集数据不上传任何服务器。<br>
+    本页为纯静态页面，无后端；除“公网 IP”模块会向 api.ipify.org / api64.ipify.org / ipwho.is / ipinfo.io 发起请求外，采集数据不上传任何服务器。<br>
     指纹哈希仅用于本页内比对。页面由 GitHub Pages 托管。
   </footer>
 </div>
@@ -1425,12 +1425,57 @@ async function fetchJSON(url, ms) {
 async function collectPublicIP() {
   const v4row = add('network', '公网 IPv4（第三方）', '查询中…', 'api.ipify.org');
   const v6row = add('network', '公网 IPv6 / 回退地址（第三方）', '查询中…', 'api64.ipify.org');
-  const geoRow = add('network', '出口归属地 / 运营商（第三方）', '查询中…', 'ipapi.co');
+  const geoRow = add('network', '出口归属地 / 运营商（第三方）', '查询中…', 'ipwho.is（失败时回退 ipinfo.io）');
+
+  const geoPromise = (async () => {
+    try {
+      const g = await fetchJSON('https://ipwho.is/', 3500);
+      if (g && g.success !== false && g.ip) {
+        return {
+          source: 'ipwho.is',
+          data: {
+            ip: g.ip,
+            type: g.type || '（未返回）',
+            country: g.country || '（未返回）',
+            country_code: g.country_code || '（未返回）',
+            region: g.region || '（未返回）',
+            city: g.city || '（未返回）',
+            postal: g.postal || '（未返回）',
+            latitude: g.latitude,
+            longitude: g.longitude,
+            timezone: g.timezone ? g.timezone.id : '（未返回）',
+            asn: g.connection ? g.connection.asn : '（未返回）',
+            org: g.connection ? g.connection.org : '（未返回）',
+            isp: g.connection ? g.connection.isp : '（未返回）'
+          }
+        };
+      }
+    } catch (e) { /* 继续尝试回退接口 */ }
+    try {
+      const g = await fetchJSON('https://ipinfo.io/json', 3500);
+      if (g && g.ip) {
+        return {
+          source: 'ipinfo.io',
+          data: {
+            ip: g.ip,
+            city: g.city || '（未返回）',
+            region: g.region || '（未返回）',
+            country: g.country || '（未返回）',
+            postal: g.postal || '（未返回）',
+            loc: g.loc || '（未返回）',
+            org: g.org || '（未返回）',
+            timezone: g.timezone || '（未返回）'
+          }
+        };
+      }
+    } catch (e) { /* 两个接口均失败 */ }
+    return null;
+  })();
 
   const [v4, v6, geo] = await Promise.allSettled([
     fetchJSON('https://api.ipify.org?format=json'),
     fetchJSON('https://api64.ipify.org?format=json'),
-    fetchJSON('https://ipapi.co/json/')
+    geoPromise
   ]);
 
   const isIPv4 = (ip) => /^\d{1,3}(\.\d{1,3}){3}$/.test(ip);
@@ -1452,20 +1497,10 @@ async function collectPublicIP() {
     setRow(v6row, '请求失败（超时 / CORS / 网络受限）', 'api64.ipify.org');
   }
 
-  if (geo.status === 'fulfilled' && geo.value && !geo.value.error) {
-    const g = geo.value;
-    setRow(geoRow, {
-      ip: g.ip || '（未返回）',
-      country: g.country_name || '（未返回）',
-      region: g.region || '（未返回）',
-      city: g.city || '（未返回）',
-      org: g.org || '（未返回）',
-      asn: g.asn || '（未返回）',
-      timezone: g.timezone || '（未返回）'
-    }, 'ipapi.co/json');
+  if (geo.status === 'fulfilled' && geo.value) {
+    setRow(geoRow, geo.value.data, geo.value.source);
   } else {
-    const reason = geo.status === 'fulfilled' && geo.value && geo.value.reason ? '：' + geo.value.reason : '';
-    setRow(geoRow, '请求失败' + reason, 'ipapi.co/json');
+    setRow(geoRow, '请求失败（超时 / CORS / 网络受限）', 'ipwho.is → ipinfo.io');
   }
 }
 
@@ -1790,7 +1825,7 @@ function addLimitNotes() {
     '字体检测通过“指定字体 + 回退基线字体”的文本宽度差异实现，只能判断疑似安装，不能读取字体文件版本，也可能漏检与基线度量完全一致的字体。',
     'Canvas / Audio / WebGL / 字体 / 布局哈希均在本机计算，不上传。它们在同一设备同一浏览器内通常稳定，但会随浏览器版本、GPU 驱动、系统字体变化。',
     '综合指纹额外包含 UA 与引擎版本，浏览器升级后必然变化；需要跨版本比较时请使用“稳定设备指纹”。',
-    '公网 IP 与归属地来自第三方接口（api.ipify.org、api64.ipify.org、ipapi.co），属于本页唯一的外部网络请求；接口限流、CORS 或网络受限时本页会如实显示失败。',
+    '公网 IP 与归属地来自第三方接口（api.ipify.org、api64.ipify.org、ipwho.is、ipinfo.io），属于本页唯一的外部网络请求；接口限流、CORS 或网络受限时本页会如实显示失败。',
     '权限状态为查询时刻的浏览器记录值，不代表用户此刻一定会授权；本页不会主动弹窗申请摄像头、麦克风、定位等权限。',
     '页面为 GitHub Pages 静态托管，无后端、无数据库、无日志收集。'
   ];
