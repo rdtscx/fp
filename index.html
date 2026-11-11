@@ -7,99 +7,233 @@
 <title>浏览器指纹与真实参数报告</title>
 <style>
 :root{
-  --bg:#070b10;--card:#0f1620;--line:#1e2b3a;--text:#e6eef8;--muted:#8ba1b8;
-  --accent:#38bdf8;--accent2:#a78bfa;--ok:#34d399;--no:#f87171;
+  --bg:#070b10;
+  --panel:#0d1620;
+  --panel2:#0a121a;
+  --line:#1b2a39;
+  --line2:#24384a;
+  --text:#e8f0f8;
+  --muted:#8aa0b6;
+  --dim:#5f7d96;
+  --accent:#4cc9f0;
+  --violet:#a78bfa;
+  --ok:#2dd4bf;
+  --warn:#fbbf24;
   --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
 }
 *{box-sizing:border-box}
-html{color-scheme:dark}
+[hidden]{display:none!important}
+html{color-scheme:dark;scroll-behavior:smooth}
 body{
   margin:0;color:var(--text);line-height:1.55;
-  background:radial-gradient(1200px 600px at 15% -10%,rgba(18,58,90,.45),transparent 60%),var(--bg);
+  background:
+    radial-gradient(1100px 520px at 12% -12%,rgba(76,201,240,.10),transparent 60%),
+    radial-gradient(900px 500px at 100% 0%,rgba(167,139,250,.07),transparent 55%),
+    var(--bg);
   font-family:"Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
 }
-.wrap{max-width:1180px;margin:0 auto;padding:26px 16px 64px}
-.hero{border:1px solid var(--line);border-radius:20px;padding:20px 20px 16px;background:linear-gradient(160deg,#0c1926,#0a1119 70%);margin-bottom:14px}
-.eyebrow{font-size:11px;letter-spacing:.2em;color:var(--accent)}
-h1{font-size:clamp(21px,3vw,32px);margin:4px 0 6px;line-height:1.25}
-.lead{color:var(--muted);font-size:13px;margin:0 0 14px;max-width:900px}
-.hero-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-button{font:inherit;color:#dff3ff;background:#10283a;border:1px solid #1d4a66;border-radius:9px;padding:7px 12px;cursor:pointer;font-size:12.5px}
-button:hover{border-color:var(--accent);color:#fff}
-button.copy{background:transparent;border-color:var(--line);color:var(--muted);padding:2px 8px;font-size:11px;margin-left:8px}
-button.copy:hover{color:var(--accent);border-color:var(--accent)}
-.hash-panel{display:grid;gap:9px;margin:6px 0 14px}
-.hash-block{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#09111a;border:1px solid #17283a;border-radius:12px;padding:10px 12px}
-.hash-block.primary{border-color:#1b5a7a;background:linear-gradient(90deg,#0a1c2a,#09111a)}
-.hash-label{font-size:11.5px;color:var(--muted);min-width:196px}
-.hash-block code{font-family:var(--mono);font-size:12px;color:#7fe3ff;word-break:break-all;flex:1 1 240px;min-width:0;white-space:normal}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:9px;margin:14px 0 10px}
-.stat{background:#0c141d;border:1px solid #172434;border-radius:11px;padding:9px 11px;min-width:0}
-.stat b{display:block;font-size:10.5px;color:var(--muted);font-weight:500;margin-bottom:2px}
-.stat span{font-size:12.5px;word-break:break-word}
-.mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.mini .chip{font-family:var(--mono);font-size:11px}
-.legend{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:11.5px;margin:0 4px 8px}
-.legend .chip{font-size:11px}
-.card{background:linear-gradient(180deg,#0f1822,#0c141d);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin:12px 0}
-.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.card h2{font-size:15.5px;margin:0;letter-spacing:.01em}
-.desc{color:var(--muted);font-size:12px;margin:3px 0 12px}
-.badge{font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
-.badge.pending{color:var(--accent);border-color:#1d4a66}
-.placeholder{color:var(--muted);font-size:12.5px;padding:10px 0 4px}
-.row{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr) minmax(110px,190px);gap:12px;padding:7px 0;border-top:1px dashed #16222f;align-items:start}
+button{font:inherit;color:#dff3ff;background:#0e2231;border:1px solid #1b3a4c;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:11.5px;line-height:1.4;transition:border-color .15s,color .15s,background .15s}
+button:hover{border-color:#2d6b86;color:#fff}
+button.primary{background:linear-gradient(135deg,#0c6f8a,#155e75);border-color:#1c7f9e;color:#eaffff;font-weight:600}
+button.primary:hover{background:linear-gradient(135deg,#0f819f,#1a708b)}
+button.copy{background:transparent;border-color:#1c2e3e;color:#7895ad;padding:1px 6px;font-size:10px;margin-left:8px;border-radius:6px}
+button.copy:hover{color:#7fe3ff;border-color:#2c6d8a}
+
+/* top bar */
+.topbar{position:sticky;top:0;z-index:30;background:rgba(7,11,16,.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(27,42,57,.9)}
+.topbar-inner{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:9px;min-width:180px}
+.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--violet));color:#04121d;font-weight:800;font-size:11px;display:grid;place-items:center;letter-spacing:.6px;box-shadow:0 4px 14px rgba(76,201,240,.18)}
+.brand strong{display:block;font-size:13px;letter-spacing:.01em}
+.brand small{display:block;color:var(--dim);font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;padding:4px 9px;border-radius:999px;border:1px solid #1b2c3a;color:var(--muted);white-space:nowrap;background:#0a141d;margin-left:auto}
+.status .dot{width:6px;height:6px;border-radius:50%;background:#64748b;flex-shrink:0}
+.status.loading{color:#fbbf24;border-color:#4a3a1a;background:#1a1408}
+.status.loading .dot{background:#fbbf24;animation:pulse 1s infinite}
+.status.partial{color:#7dd3fc;border-color:#1d4a66;background:#081a26}
+.status.partial .dot{background:#38bdf8;animation:pulse 1.2s infinite}
+.status.done{color:#5eead4;border-color:#1b4a3e;background:#081f1a}
+.status.done .dot{background:#2dd4bf}
+.status.cache{color:#c4b5fd;border-color:#3b2f63;background:#120f1f}
+.status.cache .dot{background:var(--violet)}
+.actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.search{position:relative;display:flex;align-items:center}
+.search .icon{position:absolute;left:9px;width:10px;height:10px;border:1.5px solid var(--dim);border-radius:50%;pointer-events:none}
+.search .icon::after{content:"";position:absolute;width:5px;height:1.5px;background:var(--dim);transform:rotate(45deg);left:8px;top:9px}
+.search input{font:inherit;font-size:11.5px;color:var(--text);background:#08111a;border:1px solid #182a39;border-radius:8px;padding:6px 56px 6px 27px;outline:none;width:220px;transition:border-color .15s,box-shadow .15s}
+.search input::placeholder{color:#4f6a82}
+.search input:focus{border-color:#2a6a86;box-shadow:0 0 0 3px rgba(76,201,240,.08)}
+.search #filter-count{position:absolute;right:8px;font-size:9.5px;color:#5f7d96;pointer-events:none}
+.progress{height:2px;background:transparent;overflow:hidden}
+.progress.active{background:#0f1b27}
+.progress span{display:block;height:100%;width:30%;background:linear-gradient(90deg,transparent,var(--accent),var(--violet),transparent);animation:slide 1.3s linear infinite}
+.progress:not(.active) span{display:none}
+
+.wrap{max-width:1180px;margin:0 auto;padding:16px 16px 48px}
+
+/* hero */
+.hero{position:relative;border:1px solid var(--line);border-radius:20px;padding:24px;background:radial-gradient(900px 300px at 8% 0%,rgba(76,201,240,.10),transparent 62%),linear-gradient(160deg,#0b1520,#091018 72%);overflow:hidden;margin-bottom:12px}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 60%,rgba(167,139,250,.05));pointer-events:none}
+.hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,440px);gap:26px;align-items:start}
+.eyebrow{font-size:10px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase}
+h1{font-size:clamp(21px,3vw,31px);margin:5px 0 7px;line-height:1.22;letter-spacing:-.01em}
+.lead{color:var(--muted);font-size:12.5px;margin:0 0 14px;max-width:760px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:10.5px;color:var(--dim);align-items:center}
+.hero-meta span{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border:1px solid #162432;border-radius:999px;background:#0a131c;max-width:100%;word-break:break-word}
+.cache-pill{color:#c4b5fd;border-color:#3b2f63!important;background:#120f1f!important}
+.live-pill{color:#5eead4;border-color:#1b4a3e!important;background:#081f1a!important}
+.fingerprint-card{background:#08111a;border:1px solid #1b3a4c;border-radius:15px;padding:15px 16px;box-shadow:0 14px 34px rgba(0,0,0,.3)}
+.hash-row{padding:9px 0;border-top:1px dashed #16293a}
+.hash-row:first-child{border-top:0;padding-top:0}
+.hash-label{display:block;font-size:9.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+.hash-value{display:block;font-family:var(--mono);font-size:12px;color:#7fe3ff;word-break:break-all;line-height:1.65;margin:5px 0 0;min-height:16px}
+.hash-row .copy{margin-top:5px}
+.hash-sub{font-size:10px;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px dashed #16293a;word-break:break-all}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px;margin-top:14px;position:relative;z-index:1}
+.stat{background:#0a131c;border:1px solid #162432;border-radius:10px;padding:8px 10px;min-width:0}
+.stat b{display:block;font-size:9px;letter-spacing:.12em;color:var(--dim);font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.stat span{font-size:11.5px;color:var(--text);word-break:break-word;display:block;line-height:1.45}
+.mini{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;position:relative;z-index:1}
+.mini .chip{font-family:var(--mono);font-size:10px}
+.skeleton{display:block;background:linear-gradient(90deg,#0e1a25,#172936,#0e1a25);background-size:200% 100%;animation:shimmer 1.3s linear infinite;border-radius:5px}
+.sk-line{height:12px;width:78%}
+.sk-card{height:110px;margin-bottom:10px}
+.sk-chip{height:16px;width:100px;display:inline-block}
+
+/* nav */
+.nav{display:flex;align-items:center;gap:10px;margin:10px 0 12px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:rgba(10,17,24,.72)}
+.nav-links{display:flex;gap:4px;overflow-x:auto;flex:1;padding:2px;scrollbar-width:none}
+.nav-links::-webkit-scrollbar{display:none}
+.nav-links a{white-space:nowrap;color:var(--muted);text-decoration:none;font-size:11px;padding:5px 9px;border-radius:8px;display:inline-flex;gap:6px;align-items:center;transition:background .15s,color .15s}
+.nav-links a:hover{background:#0f1d29;color:var(--text)}
+.nav-links a.active{background:#0d2633;color:#9fe8ff;box-shadow:inset 0 0 0 1px #1b4a5e}
+.nav-links b{font-weight:600;color:var(--dim);font-size:9px;background:#0a141d;border:1px solid #142433;border-radius:4px;padding:0 4px;margin-left:1px}
+.nav-tools{display:flex;gap:4px;flex-shrink:0}
+.nav-tools button{padding:4px 8px;font-size:10px;background:#0b1721}
+
+/* cards */
+.card{background:linear-gradient(180deg,#0d1620,#0a121a);border:1px solid var(--line);border-radius:14px;margin:10px 0;overflow:hidden;scroll-margin-top:86px}
+.card summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;list-style:none;user-select:none;transition:background .15s}
+.card summary::-webkit-details-marker{display:none}
+.card summary:hover{background:#0e1a25}
+.sum-main{min-width:0;display:block}
+.title{display:block;font-size:14px;font-weight:600;color:var(--text);letter-spacing:.005em}
+.desc{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5}
+.sum-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.count{font-size:10px;color:var(--dim);background:#0a141d;border:1px solid #172735;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.chev{width:7px;height:7px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);transition:transform .2s;margin:0 5px}
+.card[open] .chev{transform:rotate(-135deg)}
+.pending-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(76,201,240,.12);animation:pulse 1.2s infinite}
+.sec-body{padding:0 16px 14px;border-top:1px solid #13202c}
+.rows{padding-top:2px}
+
+/* rows */
+.row{display:grid;grid-template-columns:minmax(145px,225px) minmax(0,1fr);gap:16px;padding:8px 0;border-top:1px dashed #16222f;align-items:start}
 .row:first-child{border-top:0}
-.row.wide{grid-template-columns:minmax(150px,220px) minmax(0,1fr)}
-.row .k{color:#c3d4e6;font-size:13px;word-break:break-word}
-.row .k .src{color:#6f8ba6;font-size:10.5px;font-family:var(--mono);margin-top:2px}
-.row .src{color:#6f8ba6;font-size:10.5px;font-family:var(--mono);word-break:break-word;text-align:right}
-.v{font-size:13px;word-break:break-word;white-space:pre-wrap;font-family:var(--mono)}
-.mono{font-family:var(--mono)}
-.muted{color:#6f8ba6;font-size:12px}
-pre.json{margin:0;padding:9px 11px;background:#09111a;border:1px solid #16222f;border-radius:8px;font-family:var(--mono);font-size:11.5px;color:#b9d6ee;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto}
-.chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{display:inline-flex;align-items:center;gap:4px;background:#0d1a26;border:1px solid #1a2c3e;border-radius:7px;padding:2px 7px;font-size:11.5px;color:#cfe6f8;word-break:break-word}
-.chip .copy{margin-left:2px}
-.fgrid{display:flex;flex-wrap:wrap;gap:6px}
-.fgrid .chip.ok{border-color:#1d5140;background:#0a2019;color:#a7f3d0}
-.fgrid .chip.no{border-color:#4a2226;background:#1c0f12;color:#fca5a5}
-.fgrid .chip b{font-weight:600;margin-left:2px}
-.notes{margin:10px 0 0;padding-left:18px;color:#a9bfd3;font-size:12.5px}
-.notes li{margin:4px 0}
-footer{color:#5f7891;font-size:11.5px;text-align:center;margin-top:26px;line-height:1.7}
-.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#0e2536;border:1px solid #1d5a7a;color:#dff3ff;padding:8px 16px;border-radius:999px;font-size:12.5px;opacity:0;pointer-events:none;transition:.2s;z-index:99}
+.row .k{min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:1px 8px}
+.label{display:inline;font-size:12px;color:#cfe0ef;word-break:break-word}
+.src{display:inline;font-size:9px;font-family:var(--mono);color:#5f7d96;margin:0;word-break:break-word;line-height:1.45;background:#0a141d;border:1px solid #142433;border-radius:4px;padding:0 4px}
+.vcell{min-width:0;font-size:12px;line-height:1.6}
+.v{word-break:break-word;white-space:pre-wrap}
+.v.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;max-height:4.8em}
+.mono{font-family:var(--mono);font-size:11.5px}
+.ratio{font-size:9.5px;color:#4f728c;margin-left:6px;font-family:var(--mono)}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{display:inline-flex;align-items:center;gap:4px;background:#0b1721;border:1px solid #1a2c3c;border-radius:6px;padding:2px 7px;font-size:10.5px;color:#cfe6f8;word-break:break-word;max-width:100%}
+.chip.ok{background:#081f1a;border-color:#1b4a3e;color:#a7f3d0}
+.fgrid{display:flex;flex-wrap:wrap;gap:5px}
+pre.json{margin:0;padding:9px 11px;background:#08111a;border:1px solid #16222f;border-radius:8px;font-family:var(--mono);font-size:10.5px;color:#b9d6ee;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto}
+.muted{color:var(--dim);font-size:11.5px}
+
+/* states */
+.loading-panel{color:var(--muted);font-size:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#0a121a;margin:10px 0}
+.loading-panel p{margin:8px 0 0}
+.empty{color:var(--dim);font-size:12px;text-align:center;padding:22px;border:1px dashed #1b2a39;border-radius:12px;margin:10px 0;background:#09111a}
+#filter-empty{margin:14px 0}
+footer{color:#5b748b;font-size:10.5px;margin-top:26px;line-height:1.7;border-top:1px solid #13202c;padding-top:14px}
+footer p{margin:3px 0}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(16px);background:#0e2536;border:1px solid #1d5a7a;color:#dff3ff;padding:8px 16px;border-radius:999px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:99;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-@media (max-width:760px){
-  .row{grid-template-columns:1fr;gap:3px;padding:9px 0}
-  .row .src{text-align:left}
-  .hash-block{display:block}
-  .hash-label{display:block;width:auto;min-width:0;margin-bottom:4px}
-  .hash-block code{display:block;width:auto;margin:0 0 6px}
-  .mini .chip{flex:1 1 100%;justify-content:space-between}
-  .wrap{padding:16px 10px 48px}
-  .card{padding:14px}
+
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(430%)}}
+@keyframes pulse{50%{opacity:.35}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+@media (max-width:880px){
+  .hero-grid{grid-template-columns:1fr;gap:16px}
+  .fingerprint-card{box-shadow:none}
 }
+@media (max-width:700px){
+  .topbar-inner{padding:8px 10px;gap:8px}
+  .brand{min-width:0}
+  .brand small{display:none}
+  .status{order:2;margin-left:auto;font-size:10px;padding:3px 8px}
+  .actions{order:3;width:100%;gap:6px}
+  .search{flex:1;min-width:0}
+  .search input{width:100%;padding-right:52px}
+  .actions button{padding:6px 8px;font-size:10.5px}
+  .actions button.primary{padding:6px 9px}
+  .wrap{padding:12px 10px 40px}
+  .hero{padding:17px 15px;border-radius:16px}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .nav{flex-wrap:wrap;padding:7px 8px}
+  .nav-tools{display:none}
+  .card summary{padding:12px 13px}
+  .sec-body{padding:0 13px 12px}
+  .row{grid-template-columns:1fr;gap:2px;padding:7px 0}
+  .desc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 120px)}
+  .mini .chip{flex:1 1 100%;justify-content:space-between}
+  .hash-value{font-size:11px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div id="hero"></div>
-  <div class="legend">
-    <span>来源标记：</span>
-    <span class="chip">实测 · 直接调用浏览器 API</span>
-    <span class="chip">解析 · 从 UA / UA-CH 字符串提取</span>
-    <span class="chip">推断 · 基于多个真实值推导</span>
-    <span class="chip">第三方 · 外部接口返回值</span>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="logo">FP</span>
+      <div><strong>Browser Fingerprint</strong><small>真实参数报告</small></div>
+    </div>
+    <div class="status loading" id="status"><span class="dot"></span><span id="status-text">准备中</span></div>
+    <div class="actions">
+      <label class="search">
+        <span class="icon"></span>
+        <input id="q" type="search" placeholder="搜索参数或值" autocomplete="off" spellcheck="false">
+        <span id="filter-count"></span>
+      </label>
+      <button id="btn-copy-all">复制 JSON</button>
+      <button id="btn-download">下载</button>
+      <button id="btn-reload" class="primary">重新采集</button>
+    </div>
   </div>
+  <div class="progress" id="progress"><span></span></div>
+</header>
+
+<main class="wrap">
+  <nav class="nav" id="nav" hidden>
+    <div class="nav-links" id="nav-links"></div>
+    <div class="nav-tools">
+      <button id="btn-expand">展开全部</button>
+      <button id="btn-collapse">收起全部</button>
+    </div>
+  </nav>
+  <section id="hero" class="hero"></section>
   <div id="sections"></div>
+  <div id="filter-empty" class="empty" hidden>没有匹配的参数</div>
   <footer>
-    本页为纯静态页面，无后端；除“公网 IP”模块会向 api.ipify.org / api64.ipify.org / ipwho.is / ipinfo.io 发起请求外，采集数据不上传任何服务器。<br>
-    指纹哈希仅用于本页内比对。页面由 GitHub Pages 托管。
+    <p>仅展示当前浏览器实际返回的数据；不支持的接口、失败项和空值已自动隐藏。</p>
+    <p>页面为纯静态，无后端。除公网 IP / 归属地会请求 api.ipify.org、api64.ipify.org、ipwho.is、ipinfo.io 外，数据不上传；缓存仅写入本机 localStorage，10 分钟内刷新直接命中。</p>
   </footer>
-</div>
+</main>
+
 <div id="toast" class="toast"></div>
 <noscript><p style="color:#f87171;padding:20px">本页需要启用 JavaScript 才能采集参数。</p></noscript>
+
 <script>
 (() => {
 'use strict';
@@ -128,32 +262,33 @@ const FONT_LIST = [
 ];
 
 const SEC_DEFS = [
-  { id: 'browser', title: '浏览器与内核', desc: 'User-Agent、Client Hints 高熵值、UA 解析结果、渲染引擎与内核版本；每行注明是直接读取还是解析。' },
-  { id: 'hardware', title: '系统 / 硬件 / 电池', desc: '操作系统、CPU 架构与位数、核心数、设备内存、触点数、电池与手柄状态。' },
-  { id: 'screen', title: '屏幕、视口与媒体特性', desc: '屏幕尺寸、可用区域、DPR、视觉视口、CSS 单位实测值、媒体查询匹配结果。' },
-  { id: 'locale', title: '语言、时区与数字格式', desc: 'Intl 解析出的区域、日历、时区、夏令时、日期/数字/货币格式与排序规则。' },
-  { id: 'graphics', title: '图形：WebGL / WebGPU', desc: 'WebGL 厂商、渲染器、全部可读参数、扩展列表、着色器精度；WebGPU 适配器信息与限制。' },
-  { id: 'hashes', title: '指纹哈希（SHA-256）', desc: 'Canvas 绘制、音频渲染、WebGL 参数、字体列表、布局几何与综合指纹；全部在本地计算。' },
-  { id: 'fonts', title: '字体检测', desc: '通过 Canvas 文本宽度差异实测系统字体是否可用；只能判断疑似安装，不能判断字体版本。' },
-  { id: 'audio', title: '音频与语音', desc: 'AudioContext 实际参数、OfflineAudioContext 渲染结果、语音合成 voices。' },
-  { id: 'media', title: '媒体设备与编解码', desc: '摄像头/麦克风/扬声器枚举、支持约束、视频音频编解码与 MediaRecorder 支持情况。' },
-  { id: 'network', title: '网络', desc: 'Connection API、在线状态、HTTP 协议版本，以及公网出口（第三方接口，失败会如实显示）。' },
-  { id: 'storage', title: '存储与 Cookie', desc: 'localStorage / sessionStorage / Cookie / IndexedDB 实测可用性、配额与持久化状态。' },
-  { id: 'permissions', title: '权限状态', desc: '逐项查询浏览器权限状态（granted / denied / prompt）；查询失败会标注原因。' },
-  { id: 'features', title: 'API 与特性支持', desc: '逐项检测浏览器 API 是否存在（实测），✗ 表示当前浏览器未暴露该接口。' },
-  { id: 'css', title: 'CSS 能力检测', desc: 'CSS.supports 实测当前浏览器支持的布局、选择器、颜色与动画特性。' },
-  { id: 'plugins', title: '插件与 MIME 类型', desc: 'navigator.plugins / mimeTypes 的实际返回值；现代 Chromium 返回的是内置 PDF 插件列表。' },
-  { id: 'webrtc', title: 'WebRTC 候选地址', desc: '未配置 STUN/TURN 时的本地 ICE 候选；现代浏览器通常用 mDNS 隐藏真实内网 IP。' },
-  { id: 'page', title: '页面与性能', desc: '文档信息、安全上下文、导航时序、HTTP 协议版本、JS 堆内存与用户激活状态。' },
-  { id: 'privacy', title: '隐私与自动化信号', desc: 'Do Not Track、GPC、WebDriver、浏览器专属对象、Brave 检测、Cookie 弃用标签。' },
-  { id: 'limits', title: '限制与说明', desc: '纯静态页面无法获取的项目，以及各项数据的来源与可信边界。' }
+  { id: 'browser', title: '浏览器与内核', desc: 'User-Agent、Client Hints、渲染引擎与版本；解析值均标注依据。' },
+  { id: 'hardware', title: '系统与硬件', desc: '操作系统、CPU 架构、核心与内存、触控、电池及手柄。' },
+  { id: 'screen', title: '屏幕与视口', desc: '屏幕尺寸、DPR、视觉视口、CSS 单位与匹配的媒体查询。' },
+  { id: 'locale', title: '语言与时区', desc: 'Intl 区域、时区、夏令时、日期/数字/货币格式。' },
+  { id: 'graphics', title: '图形能力', desc: 'WebGL 参数、扩展、着色器精度；WebGPU 适配器信息。' },
+  { id: 'hashes', title: '指纹哈希', desc: 'Canvas、音频、WebGL、字体、布局与综合指纹，全部在本机计算。' },
+  { id: 'fonts', title: '字体检测', desc: '通过 Canvas 文本宽度差异检测字体是否可用。' },
+  { id: 'audio', title: '音频与语音', desc: 'AudioContext 参数、离线渲染与语音合成 voices。' },
+  { id: 'media', title: '媒体与编解码', desc: '设备枚举、支持约束与当前浏览器支持的编解码。' },
+  { id: 'network', title: '网络', desc: 'Connection API、在线状态、HTTP 协议与公网出口。' },
+  { id: 'storage', title: '存储与 Cookie', desc: '本地存储、Cookie、IndexedDB 实测与配额。' },
+  { id: 'permissions', title: '权限状态', desc: '浏览器记录的权限状态；未提供该 API 时不显示。' },
+  { id: 'features', title: 'API 特性', desc: '仅列出当前浏览器支持的特性，括号内为支持数 / 检测数。' },
+  { id: 'css', title: 'CSS 能力', desc: '仅列出当前浏览器支持的 CSS 特性。' },
+  { id: 'plugins', title: '插件与 MIME', desc: '浏览器实际返回的插件和 MIME 类型。' },
+  { id: 'webrtc', title: 'WebRTC 候选', desc: '未配置 STUN/TURN 时收集到的本地 ICE 候选；无候选时不显示。' },
+  { id: 'page', title: '页面与性能', desc: '文档信息、安全上下文与导航时序。' },
+  { id: 'privacy', title: '隐私信号', desc: 'DNT、GPC、WebDriver、浏览器对象与 Brave 检测。' }
 ];
 
+const DEFAULT_OPEN = new Set(['browser', 'hardware', 'screen', 'hashes', 'network']);
+
 const STATE = new Map();
-SEC_DEFS.forEach((d) => STATE.set(d.id, { ...d, rows: [], notes: [], done: false }));
+SEC_DEFS.forEach((d) => STATE.set(d.id, { ...d, rows: [], done: false }));
 
 const META = {
-  schema: 'browser-fingerprint-report/1',
+  schema: 'browser-fingerprint-report/2',
   generatedAt: null,
   pageUrl: null,
   referrer: null,
@@ -163,13 +298,28 @@ const META = {
 };
 
 const SUMMARY = {
-  browser: '—', engine: '—', os: '—', device: '—',
-  screen: '—', tz: '—', lang: '—', duration: '—',
+  browser: '—', engine: '—', os: '—', device: '—', screen: '—',
+  tz: '—', lang: '—', gpu: '—', cpu: '—',
   hashes: { stable: null, composite: null, canvas: null, audio: null, webgl: null, fonts: null, layout: null }
 };
 
 const FP = {};
 let uaHigh = null;
+
+const CACHE_VERSION = 6;
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const CACHE_KEY = 'bfp:report:v6:' + location.pathname;
+
+const UI = {
+  status: 'loading',
+  bootMode: 'fresh',
+  open: new Set(DEFAULT_OPEN),
+  query: '',
+  cacheSavedAt: 0,
+  cachePartial: false,
+  allDone: false,
+  suppressToggle: false
+};
 
 async function sha256(input) {
   try {
@@ -177,7 +327,7 @@ async function sha256(input) {
     const digest = await crypto.subtle.digest('SHA-256', data);
     return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
   } catch (e) {
-    return '不可用（' + (e.name || 'Error') + '）';
+    return '';
   }
 }
 
@@ -185,8 +335,8 @@ function plain(v) {
   if (v === null || v === undefined) return null;
   if (typeof v === 'number' && !Number.isFinite(v)) return String(v);
   if (typeof v === 'bigint') return String(v);
-  if (ArrayBuffer.isView(v)) return Array.from(v);
-  if (v instanceof Set) return Array.from(v);
+  if (ArrayBuffer.isView(v)) return Array.from(v).map(plain);
+  if (v instanceof Set) return Array.from(v).map(plain);
   if (Array.isArray(v)) return v.map(plain);
   if (typeof v === 'object') {
     const o = {};
@@ -196,25 +346,57 @@ function plain(v) {
   return v;
 }
 
+const SKIP_VALUE_RE = /^(不可用|读取失败|请求失败|查询中|不支持|未检测到|未能|未收集到|未提供|无数据|未知|（空|（未返回）)/;
+
+function clean(v) {
+  if (v === undefined || v === null) return undefined;
+  if (typeof v === 'string') {
+    const s = v.trim();
+    if (!s || SKIP_VALUE_RE.test(s)) return undefined;
+    return v;
+  }
+  if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
+  if (typeof v === 'boolean') return v;
+  if (typeof v === 'bigint') return String(v);
+  if (ArrayBuffer.isView(v)) return clean(Array.from(v));
+  if (v instanceof Set) return clean(Array.from(v));
+  if (Array.isArray(v)) {
+    const a = v.map(clean).filter((x) => x !== undefined);
+    return a.length ? a : undefined;
+  }
+  if (typeof v === 'object') {
+    const o = {};
+    for (const k of Object.keys(v)) {
+      const x = clean(v[k]);
+      if (x !== undefined) o[k] = x;
+    }
+    return Object.keys(o).length ? o : undefined;
+  }
+  return v;
+}
+
 function add(secId, label, value, source, opts) {
   const st = STATE.get(secId);
   if (!st) return null;
-  const row = { label, value, source, ...(opts || {}) };
+  const o = opts || {};
+  let v;
+  let total;
+  let supported;
+  if (o.type === 'features') {
+    const arr = Array.isArray(value) ? value : [];
+    const items = arr.filter((x) => x && x.ok === true);
+    if (!items.length) return null;
+    v = items;
+    total = arr.length;
+    supported = items.length;
+  } else {
+    v = clean(value);
+    if (v === undefined) return null;
+  }
+  const row = { label, value: v, source, ...o, total, supported };
   st.rows.push(row);
   scheduleRender();
   return row;
-}
-
-function setRow(row, value, source) {
-  if (!row) return;
-  row.value = value;
-  if (source) row.source = source;
-  scheduleRender();
-}
-
-function addNote(secId, text) {
-  const st = STATE.get(secId);
-  if (st) { st.notes.push(text); scheduleRender(); }
 }
 
 let rafId = 0;
@@ -226,125 +408,234 @@ function scheduleRender() {
 function fmtValue(v, row) {
   if (row && row.type === 'features') {
     const items = Array.isArray(v) ? v : [];
-    if (!items.length) return '<span class="muted">（无）</span>';
-    return '<div class="fgrid">' + items.map((it) =>
-      `<span class="chip ${it.ok ? 'ok' : 'no'}" title="${esc(it.expr || it.name)}">${esc(it.name)}<b>${it.ok ? '✓' : '✗'}</b></span>`
-    ).join('') + '</div>';
+    return `<div class="fgrid">${items.map((it) => `<span class="chip ok" title="${esc(it.expr || it.name)}">${esc(it.name)}</span>`).join('')}</div>`;
   }
-  if (v === null || v === undefined) return '<span class="muted">不可用（接口未返回）</span>';
   if (ArrayBuffer.isView(v)) v = Array.from(v);
   if (Array.isArray(v)) {
-    if (!v.length) return '<span class="muted">（空）</span>';
     const simple = v.every((x) => x === null || typeof x !== 'object');
-    if (simple) return '<span class="chips">' + v.map((x) => `<span class="chip">${esc(x === null ? 'null' : String(x))}</span>`).join('') + '</span>';
+    if (simple) return `<div class="chips">${v.map((x) => `<span class="chip">${esc(x === null ? 'null' : String(x))}</span>`).join('')}</div>`;
     return `<pre class="json">${esc(JSON.stringify(v, null, 2))}</pre>`;
   }
-  if (typeof v === 'object') return `<pre class="json">${esc(JSON.stringify(v, null, 2))}</pre>`;
-  if (v === '') return '<span class="muted">（空字符串）</span>';
+  if (v && typeof v === 'object') return `<pre class="json">${esc(JSON.stringify(v, null, 2))}</pre>`;
   const text = String(v);
-  if (row && row.copy) {
-    return `<span class="v mono">${esc(text)}</span><button class="copy" data-copy="${esc(text)}">复制</button>`;
+  const mono = (row && (row.mono || row.copy)) || /^[0-9a-f]{32,}$/i.test(text);
+  const long = text.length > 120;
+  const copy = row && row.copy ? `<button class="copy" data-copy="${esc(text)}">复制</button>` : '';
+  const expand = long ? '<button class="copy" data-expand="1">展开</button>' : '';
+  return `<span class="v${mono ? ' mono' : ''}${long ? ' clamp' : ''}">${esc(text)}</span>${expand}${copy}`;
+}
+
+function renderRow(r) {
+  if (r.type === 'features') {
+    const ratio = r.total ? `<span class="ratio">${r.supported}/${r.total}</span>` : '';
+    return `<div class="row"><div class="k"><span class="label">${esc(r.label)}</span>${ratio}<span class="src">${esc(r.source)}</span></div><div class="vcell">${fmtValue(r.value, r)}</div></div>`;
   }
-  return `<span class="v">${esc(text)}</span>`;
+  return `<div class="row"><div class="k"><span class="label">${esc(r.label)}</span><span class="src">${esc(r.source)}</span></div><div class="vcell">${fmtValue(r.value, r)}</div></div>`;
+}
+
+function totalRows() {
+  return SEC_DEFS.reduce((n, d) => n + (STATE.get(d.id).rows.length || 0), 0);
+}
+
+function visibleDefs() {
+  return SEC_DEFS.filter((d) => STATE.get(d.id).rows.length > 0);
+}
+
+function cacheAgeText(ts) {
+  if (!ts) return '—';
+  const sec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (sec < 60) return '刚刚';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return min + ' 分钟前';
+  return Math.floor(min / 60) + ' 小时前';
+}
+
+function formatDuration(ms) {
+  if (ms === null || ms === undefined || !Number.isFinite(ms)) return '—';
+  return ms < 1000 ? Math.round(ms) + ' ms' : (ms / 1000).toFixed(1) + ' s';
 }
 
 function renderHero() {
-  const h = SUMMARY.hashes;
+  const h = SUMMARY.hashes || {};
   const stats = [
     ['浏览器', SUMMARY.browser],
-    ['内核 / 引擎', SUMMARY.engine],
-    ['操作系统', SUMMARY.os],
-    ['设备类型', SUMMARY.device],
+    ['内核', SUMMARY.engine],
+    ['系统', SUMMARY.os],
+    ['设备', SUMMARY.device],
     ['屏幕', SUMMARY.screen],
     ['时区', SUMMARY.tz],
-    ['语言', SUMMARY.lang],
-    ['采集耗时', SUMMARY.duration]
+    ['GPU', SUMMARY.gpu],
+    ['CPU / 内存', SUMMARY.cpu]
   ];
   const minis = [
-    ['Canvas', h.canvas],
-    ['Audio', h.audio],
-    ['WebGL', h.webgl],
-    ['Fonts', h.fonts],
-    ['Layout', h.layout]
+    ['Canvas', h.canvas], ['Audio', h.audio], ['WebGL', h.webgl],
+    ['Fonts', h.fonts], ['Layout', h.layout]
   ].filter((x) => x[1]);
 
-  const hashBlock = (label, hash, primary) => {
-    const shown = hash || '计算中…';
-    return `<div class="hash-block${primary ? ' primary' : ''}">
-      <span class="hash-label">${esc(label)}</span>
-      <code>${esc(shown)}</code>
-      ${hash ? `<button class="copy" data-copy="${esc(hash)}">复制</button>` : ''}
-    </div>`;
+  let cacheNote;
+  if (UI.status === 'cache') {
+    cacheNote = `<span class="cache-pill">缓存命中 · ${esc(cacheAgeText(UI.cacheSavedAt))}</span><span>10 分钟内刷新免等待</span>`;
+  } else if (UI.status === 'partial' && UI.cacheSavedAt) {
+    cacheNote = `<span class="cache-pill">缓存核心 · ${esc(cacheAgeText(UI.cacheSavedAt))}</span><span>正在补充</span>`;
+  } else if (UI.status === 'done') {
+    cacheNote = `<span class="live-pill">实时采集</span><span>已写入本地缓存</span>`;
+  } else {
+    cacheNote = `<span class="live-pill">实时采集</span><span>不支持的项自动隐藏</span>`;
+  }
+
+  const hashBlock = (label, val, primary) => {
+    const body = val
+      ? `<code class="hash-value">${esc(val)}</code><button class="copy" data-copy="${esc(val)}">复制</button>`
+      : `<span class="skeleton sk-line"></span>`;
+    return `<div class="hash-row${primary ? ' primary' : ''}"><span class="hash-label">${esc(label)}</span>${body}</div>`;
   };
 
+  const gen = META.generatedAt ? new Date(META.generatedAt).toLocaleString() : '—';
+  const miniHtml = minis.length
+    ? `<div class="mini">${minis.map(([k, v]) => `<span class="chip mono" title="${esc(v)}">${esc(k)} ${esc(v.slice(0, 10))}…<button class="copy" data-copy="${esc(v)}">复制</button></span>`).join('')}</div>`
+    : '';
+
   $('#hero').innerHTML = `
-    <div class="hero">
-      <div class="eyebrow">BROWSER FINGERPRINT · REAL VALUES ONLY</div>
-      <h1>浏览器指纹与真实参数报告</h1>
-      <p class="lead">打开即自动采集。每一项都来自当前浏览器的实际接口返回值，逐行标注来源；接口不存在或读取失败会明确写出“不可用”，不做推测填充。页面为纯静态，无后端。</p>
-      <div class="hero-actions">
-        <button id="btn-copy-all">复制全部 JSON</button>
-        <button id="btn-download">下载 JSON 文件</button>
-        <button id="btn-reload">重新采集</button>
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">BROWSER FINGERPRINT · REAL VALUES</div>
+        <h1>浏览器指纹与真实参数</h1>
+        <p class="lead">自动读取当前浏览器实际可用的接口；不支持、读取失败或空值已隐藏。10 分钟内刷新直接命中缓存。</p>
+        <div class="hero-meta">
+          <span>${esc(gen)}</span>
+          <span>${esc(SUMMARY.lang)}</span>
+          ${cacheNote}
+        </div>
       </div>
-      <div class="hash-panel">
+      <div class="fingerprint-card">
         ${hashBlock('稳定设备指纹 · SHA-256', h.stable, true)}
-        ${hashBlock('综合指纹（含 UA 版本）· SHA-256', h.composite, false)}
+        ${hashBlock('综合指纹（含 UA 版本）', h.composite, false)}
+        <div class="hash-sub">稳定指纹不含浏览器版本，适合设备级比对；综合指纹会随 UA / 引擎升级变化。</div>
       </div>
-      <div class="stats">
-        ${stats.map(([k, v]) => `<div class="stat"><b>${esc(k)}</b><span>${esc(v || '—')}</span></div>`).join('')}
-      </div>
-      <div class="mini">
-        ${minis.map(([k, v]) => `<span class="chip mono" title="${esc(v)}">${esc(k)} ${esc(v.slice(0, 12))}…<button class="copy" data-copy="${esc(v)}">复制</button></span>`).join('')}
-      </div>
-      <div class="muted" style="margin-top:10px">生成时间：${esc(new Date().toLocaleString())} · 采集开始于页面加载</div>
-    </div>`;
+    </div>
+    <div class="stat-grid">
+      ${stats.map(([k, v]) => `<div class="stat"><b>${esc(k)}</b><span>${esc(v || '—')}</span></div>`).join('')}
+    </div>
+    ${miniHtml}`;
+}
+
+function renderStatus() {
+  const total = totalRows();
+  let mode = UI.status;
+  let label = '';
+  if (UI.status === 'loading') label = `采集中 · ${total} 项`;
+  else if (UI.status === 'partial') label = (UI.cacheSavedAt ? '缓存核心' : '核心就绪') + ` · 补充采集中 · ${total} 项`;
+  else if (UI.status === 'cache') label = `缓存 · ${cacheAgeText(UI.cacheSavedAt)} · ${total} 项`;
+  else label = `完成 · ${formatDuration(META.durationMs)} · ${total} 项`;
+  const el = $('#status');
+  el.className = 'status ' + mode;
+  el.title = '缓存有效期 10 分钟；重新采集会清除缓存';
+  $('#status-text').textContent = label;
+  $('#progress').classList.toggle('active', mode === 'loading' || mode === 'partial');
+}
+
+function renderNav() {
+  const visible = visibleDefs();
+  const nav = $('#nav');
+  nav.hidden = !visible.length;
+  if (!visible.length) return;
+  $('#nav-links').innerHTML = visible.map((d) => {
+    const n = STATE.get(d.id).rows.length;
+    return `<a href="#sec-${d.id}" data-nav="${d.id}"><span>${esc(d.title)}</span><b>${n}</b></a>`;
+  }).join('');
 }
 
 function renderSections() {
   const host = $('#sections');
-  host.innerHTML = SEC_DEFS.map((def) => {
+  const visible = visibleDefs();
+  if (!visible.length) {
+    host.innerHTML = UI.allDone
+      ? '<div class="empty">当前浏览器没有返回可展示的数据。</div>'
+      : '<div class="loading-panel"><div class="skeleton sk-card"></div><p>正在读取浏览器接口…</p></div>';
+    return;
+  }
+  host.innerHTML = visible.map((def) => {
     const st = STATE.get(def.id);
-    const rows = st.rows;
-    const badge = st.done
-      ? (rows.length ? `${rows.length} 行` : (st.notes.length ? `${st.notes.length} 条说明` : '无数据'))
-      : '采集中';
-    if (!rows.length && !st.done) {
-      return `<section class="card" id="sec-${def.id}">
-        <div class="card-head"><h2>${esc(def.title)}</h2><span class="badge pending">${esc(badge)}</span></div>
-        <p class="desc">${esc(def.desc)}</p>
-        <div class="placeholder">正在调用浏览器接口…</div>
-      </section>`;
-    }
-    const body = rows.map((r) => {
-      if (r.type === 'features') {
-        return `<div class="row wide"><div class="k">${esc(r.label)}<div class="src">${esc(r.source)}</div></div><div class="vcell">${fmtValue(r.value, r)}</div></div>`;
-      }
-      return `<div class="row"><div class="k">${esc(r.label)}</div><div class="vcell">${fmtValue(r.value, r)}</div><div class="src">${esc(r.source)}</div></div>`;
-    }).join('');
-    const empty = (st.done && !rows.length) ? '<div class="placeholder">当前浏览器未返回该组数据。</div>' : '';
-    const notes = st.notes.length ? `<ul class="notes">${st.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : '';
-    return `<section class="card" id="sec-${def.id}">
-      <div class="card-head"><h2>${esc(def.title)}</h2><span class="badge done">${esc(badge)}</span></div>
-      <p class="desc">${esc(def.desc)}</p>
-      <div class="rows">${body}</div>${empty}${notes}
-    </section>`;
+    const open = UI.open.has(def.id) ? ' open' : '';
+    const pending = st.done ? '' : '<span class="pending-dot" title="补充采集中"></span>';
+    return `<details class="card" id="sec-${def.id}" data-sec="${def.id}"${open}>
+      <summary>
+        <span class="sum-main"><span class="title">${esc(def.title)}</span><span class="desc">${esc(def.desc)}</span></span>
+        <span class="sum-right">${pending}<span class="count">${st.rows.length} 项</span><span class="chev"></span></span>
+      </summary>
+      <div class="sec-body"><div class="rows">${st.rows.map(renderRow).join('')}</div></div>
+    </details>`;
   }).join('');
+  bindDetails();
+}
+
+function bindDetails() {
+  document.querySelectorAll('#sections details[data-sec]').forEach((d) => {
+    d.addEventListener('toggle', () => {
+      if (UI.suppressToggle || UI.query) return;
+      if (d.open) UI.open.add(d.dataset.sec);
+      else UI.open.delete(d.dataset.sec);
+    });
+  });
+}
+
+function applyFilter() {
+  const input = $('#q');
+  const q = (input ? input.value : '').trim().toLowerCase();
+  UI.query = q;
+  let matches = 0;
+  UI.suppressToggle = true;
+  document.querySelectorAll('#sections details[data-sec]').forEach((d) => {
+    let sectionMatches = 0;
+    d.querySelectorAll('.row').forEach((row) => {
+      const hit = !q || row.innerText.toLowerCase().includes(q);
+      row.hidden = !hit;
+      if (hit) sectionMatches++;
+    });
+    d.hidden = q ? sectionMatches === 0 : false;
+    if (q && sectionMatches) d.open = true;
+    if (!q) d.open = UI.open.has(d.dataset.sec);
+    matches += sectionMatches;
+    const nav = document.querySelector('#nav-links a[data-nav="' + d.dataset.sec + '"]');
+    if (nav) nav.hidden = d.hidden;
+  });
+  UI.suppressToggle = false;
+  const fc = $('#filter-count');
+  if (fc) fc.textContent = q ? `${matches} 项匹配` : '';
+  const empty = $('#filter-empty');
+  if (empty) empty.hidden = !(q && matches === 0);
+}
+
+function updateActiveNav() {
+  const links = Array.from(document.querySelectorAll('#nav-links a[data-nav]')).filter((a) => !a.hidden);
+  if (!links.length) return;
+  const y = window.scrollY + 140;
+  let active = links[0];
+  for (const a of links) {
+    const el = document.getElementById('sec-' + a.dataset.nav);
+    if (el && el.getBoundingClientRect().top + window.scrollY <= y) active = a;
+  }
+  links.forEach((a) => a.classList.toggle('active', a === active));
 }
 
 function render() {
+  renderStatus();
   renderHero();
+  renderNav();
   renderSections();
+  applyFilter();
+  updateActiveNav();
 }
 
 function buildReport() {
   return {
-    schema: META.schema,
+    schema: 'browser-fingerprint-report/2',
     meta: {
+      version: CACHE_VERSION,
       generatedAt: META.generatedAt,
       pageUrl: META.pageUrl,
       referrer: META.referrer,
-      userAgent: navigator.userAgent,
+      userAgent: META.userAgent || navigator.userAgent,
       durationMs: META.durationMs,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       languages: navigator.languages
@@ -356,20 +647,82 @@ function buildReport() {
         id: def.id,
         title: def.title,
         description: def.desc,
+        done: st.done,
         rows: st.rows.map((r) => ({
           label: r.label,
           value: plain(r.value),
           source: r.source,
-          type: r.type || 'value'
-        })),
-        notes: st.notes
+          type: r.type || 'value',
+          total: r.total,
+          supported: r.supported,
+          copy: r.copy || undefined
+        }))
       };
     })
   };
 }
 
+function readCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || data.version !== CACHE_VERSION || !data.report) return null;
+    if (!Number.isFinite(data.savedAt) || Date.now() - data.savedAt > CACHE_TTL_MS) return null;
+    if (data.report.meta && data.report.meta.pageUrl) {
+      try {
+        if (new URL(data.report.meta.pageUrl).origin !== location.origin) return null;
+      } catch (e) { /* 忽略无法解析的旧 URL */ }
+    }
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveCache(partial) {
+  try {
+    const payload = { version: CACHE_VERSION, savedAt: Date.now(), partial: !!partial, report: buildReport() };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+    UI.cacheSavedAt = payload.savedAt;
+    UI.cachePartial = !!partial;
+  } catch (e) { /* localStorage 不可用或超出配额时静默跳过 */ }
+}
+
+function hydrateCache(data) {
+  const r = data.report || {};
+  const m = r.meta || {};
+  META.generatedAt = m.generatedAt || new Date().toISOString();
+  META.pageUrl = m.pageUrl || location.href;
+  META.referrer = m.referrer || '';
+  META.userAgent = m.userAgent || navigator.userAgent;
+  META.durationMs = (m.durationMs === undefined ? null : m.durationMs);
+  const s = r.summary || {};
+  for (const k of ['browser', 'engine', 'os', 'device', 'screen', 'tz', 'lang', 'gpu', 'cpu']) {
+    if (s[k] !== undefined) SUMMARY[k] = s[k];
+  }
+  SUMMARY.hashes = {
+    stable: null, composite: null, canvas: null, audio: null, webgl: null, fonts: null, layout: null,
+    ...(s.hashes || {})
+  };
+  for (const def of SEC_DEFS) {
+    const st = STATE.get(def.id);
+    st.rows = [];
+    st.done = false;
+    const sec = (r.sections || []).find((x) => x.id === def.id);
+    if (sec) {
+      st.rows = (sec.rows || []).map((row) => ({ ...row }));
+      st.done = !!sec.done;
+    }
+  }
+  UI.cacheSavedAt = data.savedAt || 0;
+  UI.cachePartial = !!data.partial;
+  UI.allDone = !data.partial;
+}
+
 function showToast(msg) {
   const t = $('#toast');
+  if (!t) return;
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(showToast._t);
@@ -410,20 +763,80 @@ function downloadJSON() {
   showToast('已生成 JSON 文件');
 }
 
+function forceRefresh() {
+  try { localStorage.removeItem(CACHE_KEY); } catch (e) { /* 忽略 */ }
+  location.reload();
+}
+
+function expandAll() {
+  document.querySelectorAll('#sections details[data-sec]').forEach((d) => {
+    d.open = true;
+    UI.open.add(d.dataset.sec);
+  });
+}
+
+function collapseAll() {
+  document.querySelectorAll('#sections details[data-sec]').forEach((d) => {
+    d.open = false;
+    UI.open.delete(d.dataset.sec);
+  });
+}
+
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('button');
-  if (!btn) return;
-  if (btn.id === 'btn-copy-all') { copyAll(); return; }
-  if (btn.id === 'btn-download') { downloadJSON(); return; }
-  if (btn.id === 'btn-reload') { location.reload(); return; }
-  if (btn.dataset.copy !== undefined) { copyText(btn.dataset.copy); }
+  if (btn) {
+    if (btn.id === 'btn-copy-all') { copyAll(); return; }
+    if (btn.id === 'btn-download') { downloadJSON(); return; }
+    if (btn.id === 'btn-reload') { forceRefresh(); return; }
+    if (btn.id === 'btn-expand') { expandAll(); return; }
+    if (btn.id === 'btn-collapse') { collapseAll(); return; }
+    if (btn.dataset.expand !== undefined) {
+      const v = btn.previousElementSibling;
+      if (v) {
+        v.classList.toggle('clamp');
+        btn.textContent = v.classList.contains('clamp') ? '展开' : '收起';
+      }
+      return;
+    }
+    if (btn.dataset.copy !== undefined) { copyText(btn.dataset.copy); return; }
+  }
+  const navLink = e.target.closest('#nav-links a[data-nav]');
+  if (navLink) {
+    e.preventDefault();
+    const id = navLink.dataset.nav;
+    const d = document.getElementById('sec-' + id);
+    if (!d) return;
+    d.open = true;
+    UI.open.add(id);
+    d.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+});
+
+const searchInput = $('#q');
+if (searchInput) searchInput.addEventListener('input', applyFilter);
+
+let scrollRaf = 0;
+window.addEventListener('scroll', () => {
+  if (scrollRaf) return;
+  scrollRaf = requestAnimationFrame(() => { scrollRaf = 0; updateActiveNav(); });
+}, { passive: true });
+
+function refreshCacheAge() {
+  if (UI.status === 'cache' || (UI.status === 'partial' && UI.cacheSavedAt)) {
+    renderStatus();
+    renderHero();
+  }
+}
+setInterval(refreshCacheAge, 15000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) refreshCacheAge();
 });
 
 async function run(name, fn) {
   try {
     await fn();
   } catch (e) {
-    add('limits', '采集异常 · ' + name, (e && e.name ? e.name + ': ' : '') + (e && e.message ? e.message : String(e)), '运行时异常');
+    console.warn('[collector] ' + name, e);
   }
 }
 
@@ -431,9 +844,10 @@ function runSync(name, fn) {
   try {
     fn();
   } catch (e) {
-    add('limits', '采集异常 · ' + name, (e && e.name ? e.name + ': ' : '') + (e && e.message ? e.message : String(e)), '运行时异常');
+    console.warn('[collector] ' + name, e);
   }
 }
+
 
 function parseBrowserTokens(ua) {
   const list = [];
@@ -613,7 +1027,7 @@ async function collectBrowser() {
   if (/;\s*wv\)/.test(ua)) wv.push('UA 含 "; wv)"');
   if (/Android/.test(ua) && /Version\/4\.0/.test(ua)) wv.push('Android + Version/4.0');
   if (/\bwv\b/.test(ua)) wv.push('UA 含 wv 标记');
-  add('browser', 'Android WebView 判定', wv.length ? { likely: true, signals: wv } : { likely: false, signals: [] }, '推断 · UA 信号组合');
+  if (wv.length) add('browser', 'Android WebView 判定', { likely: true, signals: wv }, '推断 · UA 信号组合');
 
   const apps = [];
   const appPatterns = [
@@ -629,14 +1043,7 @@ async function collectBrowser() {
     const m = ua.match(re);
     if (m) apps.push(name + (m[1] ? ' ' + m[1] : ''));
   }
-  add('browser', '应用内浏览器 / 容器', apps.length ? apps : ['未检测到已知应用容器标记'], '解析 · UA 标记匹配');
-
-  add('browser', 'window.chrome 对象', typeof window.chrome !== 'undefined', 'typeof window.chrome');
-  add('browser', 'window.chrome.runtime', !!(window.chrome && window.chrome.runtime), 'window.chrome.runtime');
-  add('browser', 'window.safari 对象', typeof window.safari !== 'undefined', 'typeof window.safari');
-  add('browser', 'window.opr 对象', typeof window.opr !== 'undefined', 'typeof window.opr');
-  add('browser', 'window.InstallTrigger', typeof window.InstallTrigger !== 'undefined', 'typeof window.InstallTrigger');
-  add('browser', 'navigator.brave 对象', !!navigator.brave, 'navigator.brave');
+  if (apps.length) add('browser', '应用内浏览器 / 容器', apps, '解析 · UA 标记匹配');
 
   SUMMARY.browser = pickBrowser(tokens, uaHigh);
   SUMMARY.engine = engine.short;
@@ -660,17 +1067,20 @@ function collectHardware() {
   add('hardware', 'navigator.hardwareConcurrency', navigator.hardwareConcurrency || '不可用', 'navigator.hardwareConcurrency');
   add('hardware', 'navigator.deviceMemory (GB)', navigator.deviceMemory === undefined ? '不可用（该浏览器未暴露）' : navigator.deviceMemory, 'navigator.deviceMemory');
   add('hardware', 'navigator.maxTouchPoints', navigator.maxTouchPoints, 'navigator.maxTouchPoints');
-  add('hardware', '粗指针 (pointer: coarse)', matchMedia('(pointer: coarse)').matches, 'matchMedia("(pointer: coarse)")');
-  add('hardware', '精细指针 (pointer: fine)', matchMedia('(pointer: fine)').matches, 'matchMedia("(pointer: fine)")');
-  add('hardware', '悬停能力 (hover: hover)', matchMedia('(hover: hover)').matches, 'matchMedia("(hover: hover)")');
 
-  const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : null;
-  if (pads === null) {
-    add('hardware', '游戏手柄', '不可用', 'navigator.getGamepads 不存在');
-  } else {
-    add('hardware', '已连接游戏手柄数量', pads.length, 'navigator.getGamepads()');
+  const cores = navigator.hardwareConcurrency;
+  const memory = navigator.deviceMemory;
+  SUMMARY.cpu = [cores ? cores + ' 核' : null, memory ? memory + ' GB' : null].filter(Boolean).join(' / ') || '—';
+  add('hardware', '指针与悬停媒体查询', {
+    'pointer: coarse': matchMedia('(pointer: coarse)').matches,
+    'pointer: fine': matchMedia('(pointer: fine)').matches,
+    'hover: hover': matchMedia('(hover: hover)').matches
+  }, 'matchMedia');
+
+  if (navigator.getGamepads) {
+    const pads = Array.from(navigator.getGamepads()).filter(Boolean);
     if (pads.length) {
-      add('hardware', '游戏手柄列表', pads.map((g) => ({ id: g.id, index: g.index, connected: g.connected, mapping: g.mapping, axes: g.axes.length, buttons: g.buttons.length })), 'navigator.getGamepads()');
+      add('hardware', '已连接游戏手柄', pads.map((g) => ({ id: g.id, index: g.index, connected: g.connected, mapping: g.mapping, axes: g.axes.length, buttons: g.buttons.length })), 'navigator.getGamepads()');
     }
   }
 
@@ -714,8 +1124,10 @@ function measureUnit(prop, value) {
 function collectScreen() {
   const s = window.screen;
   add('screen', 'screen.width × height', `${s.width} × ${s.height}`, 'screen.width / screen.height');
-  add('screen', 'screen.availWidth × availHeight', `${s.availWidth} × ${s.availHeight}`, 'screen.availWidth / availHeight');
-  add('screen', 'screen.availLeft × availTop', `${s.availLeft ?? '不可用'} × ${s.availTop ?? '不可用'}`, 'screen.availLeft / availTop');
+  const avail = { width: s.availWidth, height: s.availHeight };
+  if (typeof s.availLeft === 'number') avail.left = s.availLeft;
+  if (typeof s.availTop === 'number') avail.top = s.availTop;
+  add('screen', 'screen.avail', avail, 'screen.availWidth / availHeight / availLeft / availTop');
   add('screen', 'screen.colorDepth', s.colorDepth, 'screen.colorDepth');
   add('screen', 'screen.pixelDepth', s.pixelDepth, 'screen.pixelDepth');
   add('screen', '屏幕方向', s.orientation ? `${s.orientation.type} · ${s.orientation.angle}°` : '不可用', 'screen.orientation');
@@ -743,7 +1155,11 @@ function collectScreen() {
     ['1svh', 'height', '1svh'], ['1lvh', 'height', '1lvh'], ['1rem', 'width', '1rem'],
     ['1in', 'width', '1in'], ['1cm', 'width', '1cm'], ['1mm', 'width', '1mm'], ['1pt', 'width', '1pt']
   ];
-  add('screen', 'CSS 单位实测（px）', units.map(([label, prop, val]) => `${label} = ${measureUnit(prop, val).toFixed(2)}px`), 'DOM 布局实测');
+  const unitResults = units.map(([label, prop, val]) => {
+    const px = measureUnit(prop, val);
+    return px > 0 ? `${label} = ${px.toFixed(2)}px` : null;
+  }).filter(Boolean);
+  if (unitResults.length) add('screen', 'CSS 单位实测（px）', unitResults, 'DOM 布局实测');
 
   const mqs = [
     ['prefers-color-scheme: dark', '(prefers-color-scheme: dark)'],
@@ -797,8 +1213,7 @@ function collectLocale() {
   add('locale', '日历 (calendar)', ro.calendar, 'resolvedOptions().calendar');
   add('locale', '数字系统 (numberingSystem)', ro.numberingSystem, 'resolvedOptions().numberingSystem');
   add('locale', '时区 (timeZone)', ro.timeZone, 'resolvedOptions().timeZone');
-  add('locale', '小时周期 (hourCycle)', ro.hourCycle || '未提供', 'resolvedOptions().hourCycle');
-  add('locale', 'resolvedOptions 全量', ro, 'Intl.DateTimeFormat().resolvedOptions()');
+  add('locale', '小时周期 (hourCycle)', ro.hourCycle, 'resolvedOptions().hourCycle');
 
   const now = new Date();
   const jan = new Date(2024, 0, 15, 12, 0, 0);
@@ -869,13 +1284,9 @@ function tryGL(type) {
 async function collectGraphics() {
   const g2 = tryGL('webgl2');
   const g1 = tryGL('webgl') || tryGL('experimental-webgl');
-  add('graphics', 'WebGL2 支持', !!g2, "getContext('webgl2')");
-  add('graphics', 'WebGL1 支持', !!g1, "getContext('webgl')");
   const gl = g2 || g1;
-  if (!gl) {
-    add('graphics', 'WebGL 参数', '不可用（未获得 WebGL 上下文）', 'canvas.getContext 返回 null');
-    return;
-  }
+  if (!gl) return;
+  add('graphics', 'WebGL 上下文', g2 ? 'WebGL2' : 'WebGL1', "canvas.getContext('webgl2' / 'webgl')");
   add('graphics', '使用的上下文', (typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext) ? 'WebGL2RenderingContext' : 'WebGLRenderingContext', 'instanceof 检测');
 
   const maskedVendor = gl.getParameter(gl.VENDOR);
@@ -888,9 +1299,11 @@ async function collectGraphics() {
   const dbg = gl.getExtension('WEBGL_debug_renderer_info');
   let unmaskedVendor = null;
   let unmaskedRenderer = null;
+  SUMMARY.gpu = maskedRenderer || '—';
   if (dbg) {
     unmaskedVendor = gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL);
     unmaskedRenderer = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL);
+    SUMMARY.gpu = unmaskedRenderer || maskedRenderer || '—';
     add('graphics', 'UNMASKED_VENDOR_WEBGL', unmaskedVendor, 'WEBGL_debug_renderer_info');
     add('graphics', 'UNMASKED_RENDERER_WEBGL', unmaskedRenderer, 'WEBGL_debug_renderer_info');
   } else {
@@ -953,50 +1366,43 @@ async function collectGraphics() {
     params: plain(params),
     extensions
   }));
+  SUMMARY.hashes.webgl = FP.webgl;
   add('graphics', 'WebGL 参数哈希（SHA-256）', FP.webgl, 'SHA-256(真实参数 JSON)', { copy: true });
-
-  await collectWebGPU();
 }
 
 async function collectWebGPU() {
-  if (!navigator.gpu) {
-    add('graphics', 'WebGPU', '不支持', 'navigator.gpu 不存在');
-    return;
-  }
+  if (!navigator.gpu) return;
   let adapter = null;
   try {
     adapter = await navigator.gpu.requestAdapter();
   } catch (e) {
-    add('graphics', 'WebGPU requestAdapter', '失败：' + (e.name || 'Error'), 'navigator.gpu.requestAdapter()');
     return;
   }
-  if (!adapter) {
-    add('graphics', 'WebGPU 适配器', '不可用（requestAdapter 返回 null，可能无可用 GPU）', 'navigator.gpu.requestAdapter()');
-    return;
-  }
+  if (!adapter) return;
+
   let info = adapter.info;
   if (!info && typeof adapter.requestAdapterInfo === 'function') {
     try { info = await adapter.requestAdapterInfo(); } catch (e) { info = null; }
   }
   if (info) {
-    add('graphics', 'WebGPU 适配器信息', {
-      vendor: info.vendor || '（空）',
-      architecture: info.architecture || '（空）',
-      device: info.device || '（空）',
-      description: info.description || '（空）'
-    }, 'GPUAdapter.info');
-  } else {
-    add('graphics', 'WebGPU 适配器信息', '不可用（浏览器未暴露 adapter.info）', 'GPUAdapter.info');
+    const out = {};
+    for (const k of ['vendor', 'architecture', 'device', 'description']) {
+      if (info[k]) out[k] = info[k];
+    }
+    if (Object.keys(out).length) add('graphics', 'WebGPU 适配器', out, 'GPUAdapter.info');
   }
-  add('graphics', 'WebGPU isFallbackAdapter', adapter.isFallbackAdapter === undefined ? '不可用' : adapter.isFallbackAdapter, 'GPUAdapter.isFallbackAdapter');
-  add('graphics', 'WebGPU 特性数量', adapter.features ? adapter.features.size : '不可用', 'GPUAdapter.features');
-  add('graphics', 'WebGPU 特性列表', adapter.features ? Array.from(adapter.features) : '不可用', 'GPUAdapter.features');
+  if (adapter.isFallbackAdapter !== undefined) {
+    add('graphics', 'WebGPU isFallbackAdapter', adapter.isFallbackAdapter, 'GPUAdapter.isFallbackAdapter');
+  }
+  if (adapter.features && adapter.features.size) {
+    add('graphics', 'WebGPU 特性', Array.from(adapter.features), 'GPUAdapter.features');
+  }
   if (adapter.limits) {
     const lim = adapter.limits;
     const keys = ['maxTextureDimension2D', 'maxTextureArrayLayers', 'maxBindGroups', 'maxBufferSize', 'maxStorageBufferBindingSize', 'maxComputeWorkgroupStorageSize', 'maxComputeInvocationsPerWorkgroup', 'maxComputeWorkgroupSizeX', 'maxVertexAttributes', 'maxVertexBuffers', 'maxSampledTexturesPerShaderStage', 'maxUniformBuffersPerShaderStage'];
     const out = {};
     for (const k of keys) if (lim[k] !== undefined) out[k] = lim[k];
-    add('graphics', 'WebGPU 限制（部分）', out, 'GPUAdapter.limits');
+    if (Object.keys(out).length) add('graphics', 'WebGPU 限制（部分）', out, 'GPUAdapter.limits');
   }
 }
 
@@ -1078,7 +1484,8 @@ function layoutFingerprint() {
   const rects = el.getClientRects();
   const cs = getComputedStyle(el);
   const out = {
-    x: r.x, y: r.y, width: r.width, height: r.height,
+    width: Number(r.width.toFixed(3)),
+    height: Number(r.height.toFixed(3)),
     rectCount: rects.length,
     fontFamily: cs.fontFamily,
     lineHeight: cs.lineHeight
@@ -1140,11 +1547,10 @@ async function collectHashes() {
   SUMMARY.hashes.fonts = FP.fontsHash;
   add('hashes', '字体列表哈希（SHA-256）', FP.fontsHash, '实测 · Canvas 宽度差异检测 + SHA-256', { copy: true });
 
-  add('fonts', '检测到字体数量', fonts.detected.length, '实测 · Canvas 文本宽度差异');
-  add('fonts', '检测到字体列表', fonts.detected.length ? fonts.detected : '（未检测到列表内字体）', '实测 · "字体, 基线字体" 与基线宽度比较');
+  if (fonts.detected.length) {
+    add('fonts', '检测到字体', fonts.detected, '实测 · Canvas 文本宽度差异');
+  }
   add('fonts', '基线宽度（72px "mmmmmmmmmmlli"）', fonts.base, '实测 · Canvas measureText 等效宽度');
-  add('fonts', '本地字体访问 API (queryLocalFonts)', typeof window.queryLocalFonts === 'function', 'typeof window.queryLocalFonts');
-  add('fonts', '检测方法说明', '仅当指定字体真实存在且其字形宽度与回退基线不同才判定为“检测到”；只能判断疑似安装，不能判断字体文件版本。', '方法说明');
 
   const audio = await audioFingerprint();
   if (audio) {
@@ -1163,73 +1569,45 @@ async function collectHashes() {
 
 async function collectAudio() {
   const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) {
-    add('audio', 'AudioContext', '不可用', 'window.AudioContext 不存在');
-  } else {
-    let ac = null;
+  if (!AC) return;
+  let ac = null;
+  try {
+    ac = new AC();
+    add('audio', 'AudioContext.sampleRate', ac.sampleRate, 'AudioContext.sampleRate');
+    add('audio', 'AudioContext.state', ac.state, 'AudioContext.state');
+    if ('baseLatency' in ac) add('audio', 'baseLatency (秒)', ac.baseLatency, 'AudioContext.baseLatency');
+    if ('outputLatency' in ac) add('audio', 'outputLatency (秒)', ac.outputLatency, 'AudioContext.outputLatency');
     try {
-      ac = new AC();
-      add('audio', 'AudioContext.sampleRate', ac.sampleRate, 'AudioContext.sampleRate');
-      add('audio', 'AudioContext.state', ac.state, 'AudioContext.state');
-      if ('baseLatency' in ac) add('audio', 'baseLatency (秒)', ac.baseLatency, 'AudioContext.baseLatency');
-      if ('outputLatency' in ac) add('audio', 'outputLatency (秒)', ac.outputLatency, 'AudioContext.outputLatency');
-      try { add('audio', 'destination.maxChannelCount', ac.destination.maxChannelCount, 'AudioDestinationNode.maxChannelCount'); } catch (e) { /* 部分实现不暴露 */ }
-    } catch (e) {
-      add('audio', 'AudioContext', '创建失败：' + (e.name || 'Error'), 'new AudioContext()');
-    } finally {
-      if (ac && ac.state !== 'closed') ac.close().catch(() => {});
-    }
+      add('audio', 'destination.maxChannelCount', ac.destination.maxChannelCount, 'AudioDestinationNode.maxChannelCount');
+    } catch (e) { /* 不展示 */ }
+  } catch (e) {
+    /* 创建失败则不展示 */
+  } finally {
+    if (ac && ac.state !== 'closed') ac.close().catch(() => {});
   }
-  add('audio', 'AudioWorklet 支持', typeof window.AudioWorklet !== 'undefined', 'typeof AudioWorklet');
-
-  const ss = window.speechSynthesis;
-  if (!ss) {
-    add('audio', '语音合成 (speechSynthesis)', '不可用', 'window.speechSynthesis 不存在');
-    return;
-  }
-  const voices = await new Promise((resolve) => {
-    let done = false;
-    const finish = (v) => { if (done) return; done = true; resolve(v); };
-    const read = () => finish(ss.getVoices() || []);
-    const initial = ss.getVoices();
-    if (initial && initial.length) { finish(initial); return; }
-    const timer = setTimeout(read, 1600);
-    try {
-      ss.addEventListener('voiceschanged', () => { clearTimeout(timer); read(); }, { once: true });
-    } catch (e) {
-      clearTimeout(timer);
-      read();
-    }
-  });
-  add('audio', '语音合成 voice 数量', voices.length, 'speechSynthesis.getVoices()');
-  add('audio', '语音合成 voices', voices.map((v) => `${v.name} (${v.lang})${v.localService ? ' · 本地' : ' · 网络'}`), 'speechSynthesis.getVoices()');
 }
 
 async function collectMedia() {
-  if (!navigator.mediaDevices) {
-    add('media', 'navigator.mediaDevices', '不可用（可能非安全上下文）', 'navigator.mediaDevices');
-    return;
-  }
-  add('media', 'navigator.mediaDevices', '可用', 'navigator.mediaDevices');
-
-  if (navigator.mediaDevices.getSupportedConstraints) {
-    const c = navigator.mediaDevices.getSupportedConstraints();
-    add('media', '支持的约束 (getSupportedConstraints)', Object.keys(c).filter((k) => c[k]), 'navigator.mediaDevices.getSupportedConstraints()');
-  }
-
-  try {
-    const ds = await navigator.mediaDevices.enumerateDevices();
-    const counts = { audioinput: 0, audiooutput: 0, videoinput: 0 };
-    for (const d of ds) counts[d.kind] = (counts[d.kind] || 0) + 1;
-    add('media', '设备数量', counts, 'navigator.mediaDevices.enumerateDevices()');
-    add('media', '设备列表', ds.map((d) => ({
-      kind: d.kind,
-      label: d.label || '（空：未授权或不可用）',
-      deviceId: d.deviceId ? d.deviceId.slice(0, 12) + '…' : '（空）',
-      groupId: d.groupId ? d.groupId.slice(0, 12) + '…' : '（空）'
-    })), 'enumerateDevices()（未主动申请权限）');
-  } catch (e) {
-    add('media', '设备枚举', '失败：' + (e.name || 'Error'), 'enumerateDevices()');
+  if (navigator.mediaDevices) {
+    if (navigator.mediaDevices.getSupportedConstraints) {
+      const c = navigator.mediaDevices.getSupportedConstraints();
+      const keys = Object.keys(c).filter((k) => c[k]);
+      if (keys.length) add('media', '支持的约束', keys, 'navigator.mediaDevices.getSupportedConstraints()');
+    }
+    try {
+      const ds = await navigator.mediaDevices.enumerateDevices();
+      if (ds.length) {
+        const counts = { audioinput: 0, audiooutput: 0, videoinput: 0 };
+        for (const d of ds) counts[d.kind] = (counts[d.kind] || 0) + 1;
+        add('media', '设备数量', counts, 'navigator.mediaDevices.enumerateDevices()');
+        add('media', '设备列表', ds.map((d) => ({
+          kind: d.kind,
+          label: d.label || undefined,
+          deviceId: d.deviceId ? d.deviceId.slice(0, 12) + '…' : undefined,
+          groupId: d.groupId ? d.groupId.slice(0, 12) + '…' : undefined
+        })), 'enumerateDevices()（未主动申请权限）');
+      }
+    } catch (e) { /* 不可用时不展示 */ }
   }
 
   const videoEl = document.createElement('video');
@@ -1243,7 +1621,11 @@ async function collectMedia() {
     ['MP4 容器', 'video/mp4'],
     ['WebM 容器', 'video/webm']
   ];
-  add('media', '视频编解码支持', videoCodecs.map(([name, type]) => `${name}: ${videoEl.canPlayType(type) || '不支持'}`), 'HTMLVideoElement.canPlayType');
+  const videoOk = videoCodecs.map(([name, type]) => {
+    const r = videoEl.canPlayType(type);
+    return r ? `${name}: ${r}` : null;
+  }).filter(Boolean);
+  if (videoOk.length) add('media', '视频编解码', videoOk, 'HTMLVideoElement.canPlayType');
 
   const audioEl = document.createElement('audio');
   const audioCodecs = [
@@ -1256,25 +1638,22 @@ async function collectMedia() {
     ['FLAC', 'audio/flac'],
     ['WAV / PCM', 'audio/wav']
   ];
-  add('media', '音频编解码支持', audioCodecs.map(([name, type]) => `${name}: ${audioEl.canPlayType(type) || '不支持'}`), 'HTMLAudioElement.canPlayType');
+  const audioOk = audioCodecs.map(([name, type]) => {
+    const r = audioEl.canPlayType(type);
+    return r ? `${name}: ${r}` : null;
+  }).filter(Boolean);
+  if (audioOk.length) add('media', '音频编解码', audioOk, 'HTMLAudioElement.canPlayType');
 
   if (typeof MediaRecorder === 'function') {
     const types = ['video/webm', 'video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm;codecs=h264', 'video/mp4', 'video/mp4;codecs=avc1.42E01E', 'audio/webm', 'audio/webm;codecs=opus', 'audio/mp4', 'audio/mp4;codecs=mp4a.40.2'];
-    add('media', 'MediaRecorder 支持的类型', types.map((t) => `${t}: ${MediaRecorder.isTypeSupported(t) ? '支持' : '不支持'}`), 'MediaRecorder.isTypeSupported');
-  } else {
-    add('media', 'MediaRecorder', '不可用', 'typeof MediaRecorder');
+    const ok = types.filter((t) => MediaRecorder.isTypeSupported(t));
+    if (ok.length) add('media', 'MediaRecorder 支持的类型', ok, 'MediaRecorder.isTypeSupported');
   }
-
   if (typeof MediaSource === 'function') {
     const types = ['video/mp4', 'video/webm', 'video/mp4;codecs="avc1.42E01E"', 'video/webm;codecs="vp9"', 'audio/mp4;codecs="mp4a.40.2"'];
-    add('media', 'MediaSource 支持的类型', types.map((t) => `${t}: ${MediaSource.isTypeSupported(t) ? '支持' : '不支持'}`), 'MediaSource.isTypeSupported');
-  } else {
-    add('media', 'MediaSource', '不可用', 'typeof MediaSource');
+    const ok = types.filter((t) => MediaSource.isTypeSupported(t));
+    if (ok.length) add('media', 'MediaSource 支持的类型', ok, 'MediaSource.isTypeSupported');
   }
-
-  add('media', 'requestVideoFrameCallback', typeof HTMLVideoElement !== 'undefined' && 'requestVideoFrameCallback' in HTMLVideoElement.prototype, 'HTMLVideoElement.prototype');
-  add('media', 'MediaCapabilities', !!navigator.mediaCapabilities, 'navigator.mediaCapabilities');
-  add('media', 'WebCodecs (VideoEncoder)', typeof VideoEncoder === 'function', 'typeof VideoEncoder');
 }
 
 function testStorage(getter) {
@@ -1340,10 +1719,6 @@ async function collectStorage() {
   add('storage', 'sessionStorage 可用', testStorage(() => sessionStorage), '写入/读取/删除探测');
   add('storage', 'Cookie 可写', testCookie(), 'document.cookie 实测');
   add('storage', 'IndexedDB 可用', await testIndexedDB(), '打开并删除测试数据库');
-  add('storage', 'OPFS 支持', !!(navigator.storage && navigator.storage.getDirectory), 'navigator.storage.getDirectory');
-  add('storage', 'CacheStorage 支持', !!window.caches, 'window.caches');
-  add('storage', 'Service Worker 支持', 'serviceWorker' in navigator, "'serviceWorker' in navigator");
-  add('storage', 'Service Worker 控制器', navigator.serviceWorker && navigator.serviceWorker.controller ? '已控制' : '未控制', 'navigator.serviceWorker.controller');
 
   if (navigator.storage && navigator.storage.estimate) {
     try {
@@ -1351,27 +1726,17 @@ async function collectStorage() {
       add('storage', '存储配额 quota', `${formatBytes(est.quota)}（${est.quota} 字节）`, 'navigator.storage.estimate().quota');
       add('storage', '已使用 usage', `${formatBytes(est.usage)}（${est.usage} 字节）`, 'navigator.storage.estimate().usage');
       if (est.usageDetails) add('storage', 'usageDetails', est.usageDetails, 'navigator.storage.estimate().usageDetails');
-    } catch (e) {
-      add('storage', '存储估算', '失败：' + (e.name || 'Error'), 'navigator.storage.estimate()');
-    }
-  } else {
-    add('storage', 'Storage API', '不可用', 'navigator.storage.estimate 不存在');
+    } catch (e) { /* 不可用时不展示 */ }
   }
-
   if (navigator.storage && navigator.storage.persisted) {
     try {
       add('storage', '存储已持久化', await navigator.storage.persisted(), 'navigator.storage.persisted()');
-    } catch (e) {
-      add('storage', '存储持久化状态', '读取失败：' + e.name, 'navigator.storage.persisted()');
-    }
+    } catch (e) { /* 不可用时不展示 */ }
   }
 }
 
 async function collectPermissions() {
-  if (!navigator.permissions) {
-    add('permissions', 'Permissions API', '不可用', 'navigator.permissions 不存在');
-    return;
-  }
+  if (!navigator.permissions) return;
   const names = [
     'geolocation', 'notifications', 'camera', 'microphone', 'clipboard-read', 'clipboard-write',
     'midi', 'background-sync', 'persistent-storage', 'accelerometer', 'gyroscope', 'magnetometer',
@@ -1383,30 +1748,29 @@ async function collectPermissions() {
       const st = await navigator.permissions.query({ name });
       return { name, state: st.state };
     } catch (e) {
-      return { name, state: '不支持/查询失败（' + (e.name || 'Error') + '）' };
+      return null;
     }
   }));
   for (const r of results) {
-    add('permissions', r.name, r.state, `navigator.permissions.query({name:"${r.name}"})`);
+    if (r && (r.state === 'granted' || r.state === 'denied' || r.state === 'prompt')) {
+      add('permissions', r.name, r.state, `navigator.permissions.query({name:"${r.name}"})`);
+    }
   }
 }
 
 async function collectNetwork() {
   const c = navigator.connection;
   if (c) {
-    add('network', 'connection.type', c.type || '不可用（该浏览器未暴露 type）', 'navigator.connection.type');
-    add('network', 'effectiveType', c.effectiveType || '不可用', 'navigator.connection.effectiveType');
-    add('network', 'rtt (ms)', c.rtt === undefined ? '不可用' : c.rtt, 'navigator.connection.rtt');
-    add('network', 'downlink (Mbps)', c.downlink === undefined ? '不可用' : c.downlink, 'navigator.connection.downlink');
-    add('network', 'saveData', c.saveData, 'navigator.connection.saveData');
-  } else {
-    add('network', 'Network Information API', '不可用', 'navigator.connection 不存在');
+    if (c.type) add('network', 'connection.type', c.type, 'navigator.connection.type');
+    if (c.effectiveType) add('network', 'effectiveType', c.effectiveType, 'navigator.connection.effectiveType');
+    if (c.rtt !== undefined) add('network', 'rtt (ms)', c.rtt, 'navigator.connection.rtt');
+    if (c.downlink !== undefined) add('network', 'downlink (Mbps)', c.downlink, 'navigator.connection.downlink');
+    if (c.saveData !== undefined) add('network', 'saveData', c.saveData, 'navigator.connection.saveData');
   }
   add('network', 'navigator.onLine', navigator.onLine, 'navigator.onLine');
-
   const nav = performance.getEntriesByType('navigation')[0];
-  if (nav) {
-    add('network', 'HTTP 协议版本 (nextHopProtocol)', nav.nextHopProtocol || '不可用', 'PerformanceNavigationTiming.nextHopProtocol');
+  if (nav && nav.nextHopProtocol) {
+    add('network', 'HTTP 协议版本', nav.nextHopProtocol, 'PerformanceNavigationTiming.nextHopProtocol');
   }
 }
 
@@ -1423,10 +1787,6 @@ async function fetchJSON(url, ms) {
 }
 
 async function collectPublicIP() {
-  const v4row = add('network', '公网 IPv4（第三方）', '查询中…', 'api.ipify.org');
-  const v6row = add('network', '公网 IPv6 / 回退地址（第三方）', '查询中…', 'api64.ipify.org');
-  const geoRow = add('network', '出口归属地 / 运营商（第三方）', '查询中…', 'ipwho.is（失败时回退 ipinfo.io）');
-
   const geoPromise = (async () => {
     try {
       const g = await fetchJSON('https://ipwho.is/', 3500);
@@ -1435,22 +1795,22 @@ async function collectPublicIP() {
           source: 'ipwho.is',
           data: {
             ip: g.ip,
-            type: g.type || '（未返回）',
-            country: g.country || '（未返回）',
-            country_code: g.country_code || '（未返回）',
-            region: g.region || '（未返回）',
-            city: g.city || '（未返回）',
-            postal: g.postal || '（未返回）',
+            type: g.type || undefined,
+            country: g.country || undefined,
+            country_code: g.country_code || undefined,
+            region: g.region || undefined,
+            city: g.city || undefined,
+            postal: g.postal || undefined,
             latitude: g.latitude,
             longitude: g.longitude,
-            timezone: g.timezone ? g.timezone.id : '（未返回）',
-            asn: g.connection ? g.connection.asn : '（未返回）',
-            org: g.connection ? g.connection.org : '（未返回）',
-            isp: g.connection ? g.connection.isp : '（未返回）'
+            timezone: g.timezone ? g.timezone.id : undefined,
+            asn: g.connection ? g.connection.asn : undefined,
+            org: g.connection ? g.connection.org : undefined,
+            isp: g.connection ? g.connection.isp : undefined
           }
         };
       }
-    } catch (e) { /* 继续尝试回退接口 */ }
+    } catch (e) { /* 尝试回退接口 */ }
     try {
       const g = await fetchJSON('https://ipinfo.io/json', 3500);
       if (g && g.ip) {
@@ -1458,13 +1818,13 @@ async function collectPublicIP() {
           source: 'ipinfo.io',
           data: {
             ip: g.ip,
-            city: g.city || '（未返回）',
-            region: g.region || '（未返回）',
-            country: g.country || '（未返回）',
-            postal: g.postal || '（未返回）',
-            loc: g.loc || '（未返回）',
-            org: g.org || '（未返回）',
-            timezone: g.timezone || '（未返回）'
+            city: g.city || undefined,
+            region: g.region || undefined,
+            country: g.country || undefined,
+            postal: g.postal || undefined,
+            loc: g.loc || undefined,
+            org: g.org || undefined,
+            timezone: g.timezone || undefined
           }
         };
       }
@@ -1477,30 +1837,20 @@ async function collectPublicIP() {
     fetchJSON('https://api64.ipify.org?format=json'),
     geoPromise
   ]);
-
   const isIPv4 = (ip) => /^\d{1,3}(\.\d{1,3}){3}$/.test(ip);
   const v4ip = (v4.status === 'fulfilled' && v4.value && v4.value.ip) ? v4.value.ip : null;
   const v6ip = (v6.status === 'fulfilled' && v6.value && v6.value.ip) ? v6.value.ip : null;
 
   if (v4ip) {
-    setRow(v4row, v4ip);
+    add('network', '公网 IPv4', v4ip, 'api.ipify.org');
   } else if (v6ip && isIPv4(v6ip)) {
-    setRow(v4row, v6ip + '（经 api64 回退获取）', 'api64.ipify.org（api.ipify.org 失败时的回退）');
-  } else {
-    setRow(v4row, '请求失败（超时 / CORS / 网络受限）', 'api.ipify.org');
+    add('network', '公网 IPv4', v6ip + '（经 api64 回退获取）', 'api64.ipify.org');
   }
-
-  if (v6ip) {
-    const fallback = isIPv4(v6ip) ? '（该网络无 IPv6，接口回退返回 IPv4）' : '';
-    setRow(v6row, v6ip + fallback, 'api64.ipify.org');
-  } else {
-    setRow(v6row, '请求失败（超时 / CORS / 网络受限）', 'api64.ipify.org');
+  if (v6ip && !isIPv4(v6ip)) {
+    add('network', '公网 IPv6', v6ip, 'api64.ipify.org');
   }
-
   if (geo.status === 'fulfilled' && geo.value) {
-    setRow(geoRow, geo.value.data, geo.value.source);
-  } else {
-    setRow(geoRow, '请求失败（超时 / CORS / 网络受限）', 'ipwho.is → ipinfo.io');
+    add('network', '出口归属地 / 运营商', geo.value.data, geo.value.source);
   }
 }
 
@@ -1510,17 +1860,13 @@ function parseCandidate(c) {
 }
 
 async function collectWebRTC() {
-  add('webrtc', 'RTCPeerConnection', typeof window.RTCPeerConnection === 'function', 'typeof window.RTCPeerConnection');
   if (typeof window.RTCPeerConnection !== 'function') return;
-
   let pc = null;
   try {
     pc = new RTCPeerConnection({ iceServers: [] });
   } catch (e) {
-    add('webrtc', '创建 RTCPeerConnection', '失败：' + (e.name || 'Error'), 'new RTCPeerConnection()');
     return;
   }
-
   const candidates = new Set();
   pc.onicecandidate = (e) => {
     if (e.candidate && e.candidate.candidate) candidates.add(e.candidate.candidate);
@@ -1529,36 +1875,34 @@ async function collectWebRTC() {
     pc.createDataChannel('fp');
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-  } catch (e) {
-    add('webrtc', 'ICE 协商', '失败：' + (e.name || 'Error'), 'createOffer / setLocalDescription');
-  }
-
-  await sleep(2200);
+  } catch (e) { /* 协商失败则不展示 */ }
+  await sleep(1800);
   const raw = Array.from(candidates);
-  add('webrtc', '候选地址数量', raw.length, 'icecandidate 事件（2.2 秒窗口）');
-  add('webrtc', '候选地址明细', raw.length ? raw.map(parseCandidate) : '未收集到', 'icecandidate 事件（未配置 STUN/TURN）');
-  add('webrtc', 'mDNS 说明', '现代浏览器通常把主机候选地址替换为 .local mDNS 名称，因此无法从该接口获得真实内网 IP；这本身也是隐私保护行为。', '实测结果解读');
   try { pc.close(); } catch (e) { /* 已关闭 */ }
+  if (!raw.length) return;
+  add('webrtc', 'ICE 候选地址', raw.map(parseCandidate), 'RTCPeerConnection（未配置 STUN/TURN，1.8 秒窗口）');
 }
 
 function collectPlugins() {
   const plugins = Array.from(navigator.plugins || []).map((p) => ({
     name: p.name,
-    filename: p.filename,
-    description: p.description,
+    filename: p.filename || undefined,
+    description: p.description || undefined,
     mimeTypes: Array.from(p).map((m) => m.type)
   }));
-  add('plugins', '插件数量', plugins.length, 'navigator.plugins.length');
-  add('plugins', '插件列表', plugins.length ? plugins : '（空）', 'navigator.plugins');
+  if (plugins.length) add('plugins', '插件', plugins, 'navigator.plugins');
+
   const mimes = Array.from(navigator.mimeTypes || []).map((m) => ({
     type: m.type,
-    suffixes: m.suffixes,
-    description: m.description,
-    enabledPlugin: m.enabledPlugin ? m.enabledPlugin.name : null
+    suffixes: m.suffixes || undefined,
+    description: m.description || undefined,
+    enabledPlugin: m.enabledPlugin ? m.enabledPlugin.name : undefined
   }));
-  add('plugins', 'MIME 数量', mimes.length, 'navigator.mimeTypes.length');
-  add('plugins', 'MIME 列表', mimes.length ? mimes : '（空）', 'navigator.mimeTypes');
-  add('plugins', 'pdfViewerEnabled', navigator.pdfViewerEnabled === undefined ? '不可用' : navigator.pdfViewerEnabled, 'navigator.pdfViewerEnabled');
+  if (mimes.length) add('plugins', 'MIME 类型', mimes, 'navigator.mimeTypes');
+
+  if (navigator.pdfViewerEnabled === true) {
+    add('plugins', '内置 PDF 查看器', true, 'navigator.pdfViewerEnabled');
+  }
 }
 
 function collectPage() {
@@ -1570,8 +1914,7 @@ function collectPage() {
   add('page', '主机', loc.host, 'location.host');
   add('page', '端口', loc.port || '（默认）', 'location.port');
   add('page', '路径', loc.pathname, 'location.pathname');
-  add('page', '查询串长度', loc.search.length, 'location.search.length');
-  add('page', '哈希长度', loc.hash.length, 'location.hash.length');
+  add('page', '查询串', loc.search || '（无）', 'location.search');
   add('page', '来源页 (referrer)', document.referrer || '（无）', 'document.referrer');
   add('page', '字符集', document.characterSet, 'document.characterSet');
   add('page', 'contentType', document.contentType, 'document.contentType');
@@ -1593,14 +1936,15 @@ function collectPage() {
   if (nav) {
     add('page', '导航类型', nav.type, 'PerformanceNavigationTiming.type');
     add('page', '重定向次数', nav.redirectCount, 'PerformanceNavigationTiming.redirectCount');
-    add('page', 'nextHopProtocol', nav.nextHopProtocol || '不可用', 'PerformanceNavigationTiming.nextHopProtocol');
     add('page', 'transferSize (字节)', nav.transferSize, 'PerformanceNavigationTiming.transferSize');
     add('page', 'encodedBodySize (字节)', nav.encodedBodySize, 'PerformanceNavigationTiming.encodedBodySize');
     add('page', 'decodedBodySize (字节)', nav.decodedBodySize, 'PerformanceNavigationTiming.decodedBodySize');
     add('page', 'DOMContentLoaded (ms)', Math.round(nav.domContentLoadedEventEnd), 'PerformanceNavigationTiming');
     add('page', 'loadEventEnd (ms)', Math.round(nav.loadEventEnd), 'PerformanceNavigationTiming');
     add('page', '导航总耗时 (ms)', Math.round(nav.duration), 'PerformanceNavigationTiming.duration');
-    add('page', 'serverTiming', nav.serverTiming && nav.serverTiming.length ? Array.from(nav.serverTiming).map((s) => ({ name: s.name, duration: s.duration, description: s.description })) : '（无）', 'PerformanceNavigationTiming.serverTiming');
+    if (nav.serverTiming && nav.serverTiming.length) {
+      add('page', 'serverTiming', Array.from(nav.serverTiming).map((s) => ({ name: s.name, duration: s.duration, description: s.description })), 'PerformanceNavigationTiming.serverTiming');
+    }
   } else {
     add('page', '导航时序', '不可用（PerformanceNavigationTiming 未返回）', 'performance.getEntriesByType("navigation")');
   }
@@ -1618,33 +1962,34 @@ function collectPage() {
 }
 
 async function collectPrivacy() {
-  add('privacy', 'navigator.doNotTrack', navigator.doNotTrack === null ? 'null（未设置）' : navigator.doNotTrack, 'navigator.doNotTrack');
-  add('privacy', 'navigator.globalPrivacyControl', navigator.globalPrivacyControl === undefined ? '不可用' : navigator.globalPrivacyControl, 'navigator.globalPrivacyControl');
-  add('privacy', 'cookieEnabled', navigator.cookieEnabled, 'navigator.cookieEnabled');
-  add('privacy', 'webdriver', navigator.webdriver, 'navigator.webdriver');
-  add('privacy', 'window.chrome', typeof window.chrome !== 'undefined', 'typeof window.chrome');
-  add('privacy', 'window.chrome.runtime', !!(window.chrome && window.chrome.runtime), 'window.chrome.runtime');
-  add('privacy', 'window.safari', typeof window.safari !== 'undefined', 'typeof window.safari');
-  add('privacy', 'window.opr', typeof window.opr !== 'undefined', 'typeof window.opr');
-  add('privacy', 'window.InstallTrigger', typeof window.InstallTrigger !== 'undefined', 'typeof window.InstallTrigger');
-  add('privacy', 'navigator.brave 对象', !!navigator.brave, 'navigator.brave');
-  add('privacy', 'navigator.pdfViewerEnabled', navigator.pdfViewerEnabled === undefined ? '不可用' : navigator.pdfViewerEnabled, 'navigator.pdfViewerEnabled');
-  add('privacy', 'cookieDeprecationLabel 接口', !!(navigator.cookieDeprecationLabel && navigator.cookieDeprecationLabel.getValue), 'navigator.cookieDeprecationLabel');
+  if (navigator.doNotTrack !== undefined) {
+    add('privacy', 'navigator.doNotTrack', navigator.doNotTrack === null ? 'null（未设置）' : navigator.doNotTrack, 'navigator.doNotTrack');
+  }
+  if (navigator.globalPrivacyControl !== undefined) {
+    add('privacy', 'navigator.globalPrivacyControl', navigator.globalPrivacyControl, 'navigator.globalPrivacyControl');
+  }
+  if (navigator.webdriver !== undefined) {
+    add('privacy', 'navigator.webdriver', navigator.webdriver, 'navigator.webdriver');
+  }
+  add('privacy', '浏览器专属对象', {
+    chrome: typeof window.chrome !== 'undefined',
+    chromeRuntime: !!(window.chrome && window.chrome.runtime),
+    safari: typeof window.safari !== 'undefined',
+    opr: typeof window.opr !== 'undefined',
+    installTrigger: typeof window.InstallTrigger !== 'undefined',
+    brave: !!navigator.brave
+  }, 'typeof / 属性检测');
 
   if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
     try {
       add('privacy', 'Brave isBrave()', await navigator.brave.isBrave(), 'navigator.brave.isBrave()');
-    } catch (e) {
-      add('privacy', 'Brave isBrave()', '读取失败：' + e.name, 'navigator.brave.isBrave()');
-    }
+    } catch (e) { /* 不展示 */ }
   }
-
   if (navigator.cookieDeprecationLabel && typeof navigator.cookieDeprecationLabel.getValue === 'function') {
     try {
-      add('privacy', 'cookieDeprecationLabel 值', await navigator.cookieDeprecationLabel.getValue(), 'navigator.cookieDeprecationLabel.getValue()');
-    } catch (e) {
-      add('privacy', 'cookieDeprecationLabel 值', '读取失败：' + e.name, 'navigator.cookieDeprecationLabel.getValue()');
-    }
+      const v = await navigator.cookieDeprecationLabel.getValue();
+      if (v) add('privacy', 'cookieDeprecationLabel', v, 'navigator.cookieDeprecationLabel.getValue()');
+    } catch (e) { /* 不展示 */ }
   }
 }
 
@@ -1809,30 +2154,15 @@ function collectCSS() {
     ['overscroll-behavior', () => CSS.supports('overscroll-behavior', 'contain')],
     ['scrollbar-gutter', () => CSS.supports('scrollbar-gutter', 'stable')],
     ['accent-color', () => CSS.supports('accent-color', 'red')],
-    ['forced-color-adjust', () => CSS.supports('forced-color-adjust', 'none')],
-    ['prefers-reduced-motion', () => matchMedia('(prefers-reduced-motion: reduce)').matches],
-    ['prefers-color-scheme', () => matchMedia('(prefers-color-scheme: dark)').matches]
+    ['forced-color-adjust', () => CSS.supports('forced-color-adjust', 'none')]
   ];
-  add('css', '特性支持（✓=支持）', items.map(([name, fn]) => ({ name, ok: safeBool(fn) })), '实测 · CSS.supports / matchMedia', { type: 'features' });
-  add('css', 'CSS.supports 可用', typeof CSS !== 'undefined' && typeof CSS.supports === 'function', 'typeof CSS.supports');
+  add('css', '支持的 CSS 特性', items.map(([name, fn]) => ({ name, ok: safeBool(fn) })), '实测 · CSS.supports / matchMedia', { type: 'features' });
 }
 
-function addLimitNotes() {
-  const notes = [
-    '纯静态网页无法读取：HTTP 请求头、TLS 版本与加密套件、完整 CPU 型号、GPU 驱动版本、电池健康度、真实内网 IP（现代浏览器以 mDNS 隐藏）、宿主应用包名。这些项目未在本页伪造。',
-    '浏览器内核版本主要来自 UA 与 UA-CH：Chrome 的 UA 版本号通常被简化为 x.0.0.0，本页优先显示 UA-CH uaFullVersion 的精确版本，并在来源列标明。',
-    'Android WebView、iPadOS 桌面模式、应用内浏览器的判定属于“推断”，依据为 UA 信号组合与触点数，相关行已注明推断依据。',
-    '字体检测通过“指定字体 + 回退基线字体”的文本宽度差异实现，只能判断疑似安装，不能读取字体文件版本，也可能漏检与基线度量完全一致的字体。',
-    'Canvas / Audio / WebGL / 字体 / 布局哈希均在本机计算，不上传。它们在同一设备同一浏览器内通常稳定，但会随浏览器版本、GPU 驱动、系统字体变化。',
-    '综合指纹额外包含 UA 与引擎版本，浏览器升级后必然变化；需要跨版本比较时请使用“稳定设备指纹”。',
-    '公网 IP 与归属地来自第三方接口（api.ipify.org、api64.ipify.org、ipwho.is、ipinfo.io），属于本页唯一的外部网络请求；接口限流、CORS 或网络受限时本页会如实显示失败。',
-    '权限状态为查询时刻的浏览器记录值，不代表用户此刻一定会授权；本页不会主动弹窗申请摄像头、麦克风、定位等权限。',
-    '页面为 GitHub Pages 静态托管，无后端、无数据库、无日志收集。'
-  ];
-  for (const n of notes) addNote('limits', n);
-}
+const PHASE_A_SECTIONS = ['browser', 'hardware', 'screen', 'locale', 'graphics', 'hashes', 'fonts', 'audio', 'page', 'plugins', 'features', 'css'];
 
-async function finalize() {
+async function computeSummaries() {
+  if (SUMMARY.hashes.stable) return;
   const stable = {
     canvas: FP.canvas || null,
     audio: FP.audioHash || null,
@@ -1854,69 +2184,146 @@ async function finalize() {
     uaFullVersion: uaHigh ? (uaHigh.uaFullVersion || null) : null,
     engine: SUMMARY.engine
   };
-  SUMMARY.hashes.stable = await sha256(JSON.stringify(stable));
-  SUMMARY.hashes.composite = await sha256(JSON.stringify(composite));
+  const stableHash = await sha256(JSON.stringify(stable));
+  const compositeHash = await sha256(JSON.stringify(composite));
+  if (stableHash) SUMMARY.hashes.stable = stableHash;
+  if (compositeHash) SUMMARY.hashes.composite = compositeHash;
+  if (stableHash) add('hashes', '稳定设备指纹（SHA-256）', stableHash, 'SHA-256（稳定字段）', { copy: true });
+  if (compositeHash) add('hashes', '综合指纹（含 UA 版本，SHA-256）', compositeHash, 'SHA-256（稳定字段 + UA / 引擎版本）', { copy: true });
+}
 
-  add('hashes', '稳定设备指纹（SHA-256）', SUMMARY.hashes.stable, 'SHA-256(稳定字段 JSON)', { copy: true });
-  add('hashes', '综合指纹（含 UA 版本，SHA-256）', SUMMARY.hashes.composite, 'SHA-256(稳定字段 + UA / 引擎版本)', { copy: true });
-  add('hashes', '稳定指纹输入字段', Object.keys(stable), '说明');
-  add('hashes', '哈希算法', 'SHA-256（Web Crypto API）', 'crypto.subtle.digest');
+async function collectVoices() {
+  const ss = window.speechSynthesis;
+  if (!ss) return;
+  const voices = await new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => { if (done) return; done = true; resolve(v); };
+    const read = () => finish(ss.getVoices() || []);
+    const initial = ss.getVoices();
+    if (initial && initial.length) { finish(initial); return; }
+    const timer = setTimeout(read, 1000);
+    try {
+      ss.addEventListener('voiceschanged', () => { clearTimeout(timer); read(); }, { once: true });
+    } catch (e) {
+      clearTimeout(timer);
+      read();
+    }
+  });
+  if (!voices.length) return;
+  add('audio', '语音合成 voices', voices.map((v) => `${v.name} (${v.lang})${v.localService ? ' · 本地' : ' · 网络'}`), 'speechSynthesis.getVoices()');
+}
 
-  META.durationMs = Math.round(performance.now() - META.startedAt);
-  SUMMARY.duration = META.durationMs + ' ms';
-  add('page', '本次采集耗时', SUMMARY.duration, 'performance.now()');
-
-  for (const def of SEC_DEFS) {
-    STATE.get(def.id).done = true;
+function markDone(ids) {
+  for (const id of ids) {
+    const st = STATE.get(id);
+    if (st) st.done = true;
   }
+}
+
+function markAllDone() {
+  for (const def of SEC_DEFS) {
+    const st = STATE.get(def.id);
+    if (st) st.done = true;
+  }
+}
+
+async function phaseA() {
+  await run('浏览器与内核', collectBrowser);
+
+  runSync('系统与硬件', collectHardware);
+  runSync('屏幕与视口', collectScreen);
+  runSync('语言与时区', collectLocale);
+  runSync('页面与性能', collectPage);
+  runSync('插件与 MIME', collectPlugins);
+  runSync('API 特性', collectFeatures);
+  runSync('CSS 能力', collectCSS);
+
+  await run('WebGL', collectGraphics);
+  await Promise.allSettled([
+    run('指纹哈希', collectHashes),
+    run('音频', collectAudio)
+  ]);
+
+  await computeSummaries();
+  markDone(PHASE_A_SECTIONS);
+  saveCache(true);
   render();
 }
 
-async function main() {
+async function phaseB() {
+  const wasPartial = UI.bootMode === 'partial';
+  await Promise.allSettled([
+    run('WebGPU', collectWebGPU),
+    run('电池', collectBattery),
+    run('权限', collectPermissions),
+    run('存储', collectStorage),
+    run('媒体', collectMedia),
+    run('网络', collectNetwork),
+    run('公网 IP', collectPublicIP),
+    run('WebRTC', collectWebRTC),
+    run('语音', collectVoices),
+    run('隐私', collectPrivacy)
+  ]);
+
+  markAllDone();
+  UI.allDone = true;
+  if (!wasPartial) META.durationMs = Math.round(performance.now() - META.startedAt);
+  saveCache(false);
+  UI.status = wasPartial ? 'cache' : 'done';
+  render();
+}
+
+async function startFresh() {
   META.startedAt = performance.now();
   META.generatedAt = new Date().toISOString();
   META.pageUrl = location.href;
   META.referrer = document.referrer;
+  META.userAgent = navigator.userAgent;
+  UI.status = 'loading';
+  render();
+
+  await phaseA();
+  UI.status = 'partial';
+  render();
+  phaseB().catch((e) => console.warn('[phaseB]', e));
+}
+
+async function boot() {
+  META.startedAt = performance.now();
+  META.pageUrl = location.href;
+  META.referrer = document.referrer;
+  META.userAgent = navigator.userAgent;
   SUMMARY.tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   SUMMARY.lang = (navigator.languages || [navigator.language]).join(', ');
   SUMMARY.screen = `${screen.width}×${screen.height} · DPR ${devicePixelRatio}`;
-  addLimitNotes();
+
+  const cached = readCache();
+  if (cached) {
+    hydrateCache(cached);
+    UI.bootMode = cached.partial ? 'partial' : 'full';
+    UI.status = cached.partial ? 'partial' : 'cache';
+    UI.allDone = !cached.partial;
+    render();
+    if (cached.partial) {
+      META.startedAt = performance.now();
+      phaseB().catch((e) => console.warn('[phaseB]', e));
+    }
+    return;
+  }
+
+  UI.bootMode = 'fresh';
+  UI.status = 'loading';
   render();
-
-  await run('浏览器与内核', collectBrowser);
-
-  runSync('系统 / 硬件', collectHardware);
-  runSync('屏幕', collectScreen);
-  runSync('语言与时区', collectLocale);
-  runSync('页面', collectPage);
-  runSync('插件', collectPlugins);
-  runSync('特性检测', collectFeatures);
-  runSync('CSS 检测', collectCSS);
-  await run('WebGL / WebGPU', collectGraphics);
-  render();
-
-  await Promise.allSettled([
-    run('指纹哈希', collectHashes),
-    run('音频', collectAudio),
-    run('媒体', collectMedia),
-    run('权限', collectPermissions),
-    run('存储', collectStorage),
-    run('网络', collectNetwork),
-    run('WebRTC', collectWebRTC),
-    run('公网 IP', collectPublicIP),
-    run('隐私', collectPrivacy),
-    run('电池', collectBattery)
-  ]);
-
-  await finalize();
+  startFresh().catch((e) => console.warn('[startFresh]', e));
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', main);
+  document.addEventListener('DOMContentLoaded', boot);
 } else {
-  main();
+  boot();
 }
 })();
+
 </script>
 </body>
 </html>
