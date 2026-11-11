@@ -717,10 +717,10 @@ function add(secId, label, value, source, opts) {
   return row;
 }
 
-let rafId = 0;
+let renderTimer = 0;
 function scheduleRender() {
-  if (rafId) return;
-  rafId = requestAnimationFrame(() => { rafId = 0; render(); });
+  if (renderTimer) return;
+  renderTimer = setTimeout(() => { renderTimer = 0; render(); }, 120);
 }
 
 function fmtValue(v, row) {
@@ -913,7 +913,7 @@ function renderHero() {
   })();
   const geoLoc = geo ? [countryZh, geo.region].filter(Boolean).join(' · ') : null;
   const asnText = geo && geo.asn ? (/^AS/i.test(String(geo.asn)) ? String(geo.asn) : 'AS' + geo.asn) : null;
-  const coord = (v) => (typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(4) : v;
+  const coord = (v) => (typeof v === 'number' && Number.isFinite(v)) ? v : v;
 
   const ispEn = geo ? (geo.isp || geo.org) : null;
   const ispCn = ispEn ? ispZhName(ispEn, geo.country_code, countryZh) : null;
@@ -925,7 +925,7 @@ function renderHero() {
   const detailItems = [
     ['网络服务商', ispCell, true],
     ['位置（归属地）', geoLoc, false],
-    ['区', geo ? geo.city : null, false],
+    ['区', geo ? (geo.district || (geo.country_code !== 'CN' ? geo.city : null)) : null, false],
     ['街道', geo ? geo.street : null, false],
     ['经度', geo ? coord(geo.lon) : null, false],
     ['纬度', geo ? coord(geo.lat) : null, false],
@@ -940,6 +940,7 @@ function renderHero() {
         <code class="ip-detail-addr">${esc(ipMain)}</code>
         <span class="ip-type">${esc(geo && geo.type ? geo.type : (ipv4 ? 'IPv4' : ipv6 ? 'IPv6' : '—'))}</span>
         ${geo && geo.source ? `<span class="ip-source">${esc(geo.source)}</span>` : ''}
+        ${geo && geo.rev ? `<span class="ip-source">区/街道：${esc(geo.rev)}</span>` : ''}
       </div>
       <div class="ip-detail-grid">
         ${detailItems.map(([k, v, raw]) => `<div class="ip-detail-item"><b>${esc(k)}</b>${raw ? v : `<span>${field(v)}</span>`}</div>`).join('')}
@@ -2264,7 +2265,7 @@ async function collectNetwork() {
 
 async function fetchJSON(url, ms) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms || 4500);
+  const timer = setTimeout(() => ctrl.abort(), ms || 3000);
   try {
     const r = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -2279,7 +2280,7 @@ const isIPv6 = (ip) => typeof ip === 'string' && ip.includes(':') && /^[0-9a-f:.
 
 async function fetchGeo() {
   try {
-    const g = await fetchJSON('https://ipwho.is/', 4000);
+    const g = await fetchJSON('https://ipwho.is/', 3000);
     if (g && g.success !== false && g.ip) {
       return {
         source: 'ipwho.is',
@@ -2302,7 +2303,7 @@ async function fetchGeo() {
     }
   } catch (e) { /* 回退 ipinfo.io */ }
   try {
-    const g = await fetchJSON('https://ipinfo.io/json', 4000);
+    const g = await fetchJSON('https://ipinfo.io/json', 3000);
     if (g && g.ip) {
       const loc = String(g.loc || '').split(',').map((x) => Number(x));
       const org = String(g.org || '');
@@ -2361,27 +2362,97 @@ function gatherLocalIPs() {
       pc.createDataChannel('lan');
       pc.createOffer().then((o) => pc.setLocalDescription(o)).catch(() => {});
     } catch (e) { /* 协商失败则仅返回已收集地址 */ }
-    setTimeout(finish, 1800);
+    setTimeout(finish, 1000);
   });
   return lanPromise;
 }
 
+const REV_CACHE_KEY = 'fp:rev:v1';
+const REV_TTL = 30 * 24 * 3600 * 1000;
+
+function readRevCache() {
+  try {
+    return JSON.parse(localStorage.getItem(REV_CACHE_KEY) || '{}') || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function writeRevCache(cache) {
+  try {
+    localStorage.setItem(REV_CACHE_KEY, JSON.stringify(cache));
+  } catch (e) { /* 配额满时忽略缓存 */ }
+}
+
+async function reverseGeo(lat, lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  const key = lat.toFixed(4) + ',' + lon.toFixed(4);
+  const cache = readRevCache();
+  const hit = cache[key];
+  if (hit && Date.now() - hit.t < REV_TTL) {
+    return { district: hit.d || null, street: hit.s || null, cached: true };
+  }
+  let g = null;
+  try {
+    g = await fetchJSON('https://photon.komoot.io/reverse?lat=' + lat + '&lon=' + lon, 3000);
+  } catch (e) {
+    return hit ? { district: hit.d || null, street: hit.s || null, cached: true } : null;
+  }
+  const props = (g && g.features && g.features[0] && g.features[0].properties) || null;
+  if (!props) return null;
+  const candidate = (re) => [props.district, props.city, props.county, props.state, props.locality]
+    .find((v) => typeof v === 'string' && re.test(v)) || null;
+  const district = candidate(/(区|县|旗)$/) || null;
+  const street = [props.district, props.locality, props.street]
+    .find((v) => typeof v === 'string' && /(街道|镇|乡)$/.test(v)) || null;
+  cache[key] = { t: Date.now(), d: district, s: street };
+  const keys = Object.keys(cache);
+  if (keys.length > 400) keys.slice(0, keys.length - 400).forEach((k) => delete cache[k]);
+  writeRevCache(cache);
+  return { district, street, cached: false };
+}
+
 async function refreshPublicIP() {
-  const [v4r, v6r, v64r, geoR, lanR] = await Promise.allSettled([
-    fetchJSON('https://api.ipify.org?format=json', 5000),
-    fetchJSON('https://api6.ipify.org?format=json', 5000),
-    fetchJSON('https://api64.ipify.org?format=json', 5000),
-    fetchGeo(),
-    gatherLocalIPs()
-  ]);
-  const ipOf = (r) => (r.status === 'fulfilled' && r.value && r.value.ip) ? r.value.ip : null;
-  const from64 = ipOf(v64r);
-  const v4 = ipOf(v4r) || (from64 && isIPv4(from64) ? from64 : null);
-  const v6 = ipOf(v6r) || (from64 && !isIPv4(from64) ? from64 : null);
+  if (ipPending) return;
+  ipPending = true;
+  try {
+    await refreshPublicIPOnce();
+  } finally {
+    ipPending = false;
+  }
+}
+
+let ipPending = false;
+
+async function refreshPublicIPOnce() {
+  const geoTask = fetchGeo();
+  const lanTask = gatherLocalIPs();
+  const v4Task = fetchJSON('https://api.ipify.org?format=json', 2500).catch(() => null);
+  const v6Task = fetchJSON('https://api6.ipify.org?format=json', 1500).catch(() => null);
+
+  const v4res = await v4Task;
+  let v4 = (v4res && isIPv4(v4res.ip)) ? v4res.ip : null;
+  if (v4) {
+    IPSTATE.v4 = v4;
+    IPSTATE.loaded = true;
+    refreshLiveDom();
+    scheduleRender();
+  }
+
+  const [v6res, geoR, lanR] = await Promise.allSettled([v6Task, geoTask, lanTask]);
+  let v6 = (v6res.status === 'fulfilled' && v6res.value && isIPv6(v6res.value.ip)) ? v6res.value.ip : null;
+  if (!v4 || !v6) {
+    try {
+      const fb = await fetchJSON('https://api64.ipify.org?format=json', 2500);
+      const ip = fb && fb.ip;
+      if (ip && isIPv4(ip) && !v4) v4 = ip;
+      else if (ip && isIPv6(ip) && !v6) v6 = ip;
+    } catch (e) { /* 回退接口也失败 */ }
+  }
   const lan = lanR.status === 'fulfilled' ? lanR.value : [];
 
-  IPSTATE.v4 = v4 || '未能获取（api.ipify.org 与 api64.ipify.org 均无响应）';
-  IPSTATE.v6 = v6 || '未能获取（当前网络无 IPv6 出口）';
+  IPSTATE.v4 = (v4 && isIPv4(v4)) ? v4 : '未能获取（api.ipify.org 与 api64.ipify.org 均无响应）';
+  IPSTATE.v6 = (v6 && isIPv6(v6)) ? v6 : '未能获取（当前网络无 IPv6 出口）';
   IPSTATE.lan = lan.length ? lan : '未能获取（浏览器隐藏内网地址或改用 mDNS）';
   IPSTATE.geo = (geoR.status === 'fulfilled' && geoR.value)
     ? { ...geoR.value.data, source: geoR.value.source }
@@ -2397,6 +2468,17 @@ async function refreshPublicIP() {
   }
   refreshLiveDom();
   scheduleRender();
+
+  const g = IPSTATE.geo;
+  if (g && typeof g === 'object' && Number.isFinite(g.lat) && Number.isFinite(g.lon)) {
+    const rev = await reverseGeo(g.lat, g.lon);
+    if (rev && IPSTATE.geo === g) {
+      g.district = rev.district;
+      g.street = rev.street;
+      g.rev = 'photon.komoot.io';
+      scheduleRender();
+    }
+  }
 }
 
 function parseCandidate(c) {
@@ -2425,14 +2507,14 @@ async function collectWebRTC() {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
   } catch (e) { /* 协商失败则不展示 */ }
-  await sleep(1800);
+  await sleep(1000);
   const raw = Array.from(candidates);
   try { pc.close(); } catch (e) { /* 已关闭 */ }
   if (!raw.length) {
     add('webrtc', 'ICE 候选地址', '未能收集到候选（1.8 秒窗口内无地址返回）', 'RTCPeerConnection');
     return;
   }
-  add('webrtc', 'ICE 候选地址', raw.map(parseCandidate), 'RTCPeerConnection（未配置 STUN/TURN，1.8 秒窗口）');
+  add('webrtc', 'ICE 候选地址', raw.map(parseCandidate), 'RTCPeerConnection（未配置 STUN/TURN，1 秒窗口）');
 }
 
 function collectPlugins() {
@@ -2788,26 +2870,14 @@ function markAllDone() {
   }
 }
 
-async function phaseA() {
-  await run('浏览器与内核', collectBrowser);
-
-  runSync('系统与硬件', collectHardware);
-  runSync('屏幕与视口', collectScreen);
-  runSync('语言与时区', collectLocale);
-  runSync('页面与性能', collectPage);
-  runSync('插件与 MIME', collectPlugins);
-  runSync('API 特性', collectFeatures);
-  runSync('CSS 能力', collectCSS);
-
+async function collectHeavy() {
   await run('WebGL', collectGraphics);
   await Promise.allSettled([
     run('指纹哈希', collectHashes),
     run('音频', collectAudio)
   ]);
-
   await computeSummaries();
   markDone(PHASE_A_SECTIONS);
-  render();
 }
 
 async function phaseB() {
@@ -2818,17 +2888,10 @@ async function phaseB() {
     run('存储', collectStorage),
     run('媒体', collectMedia),
     run('网络', collectNetwork),
-    run('公网 IP', refreshPublicIP),
     run('WebRTC', collectWebRTC),
     run('语音', collectVoices),
     run('隐私', collectPrivacy)
   ]);
-
-  markAllDone();
-  UI.allDone = true;
-  META.durationMs = Math.round(performance.now() - META.startedAt);
-  UI.status = 'done';
-  render();
 }
 
 async function startFresh() {
@@ -2840,10 +2903,27 @@ async function startFresh() {
   UI.status = 'loading';
   render();
 
-  await phaseA();
+  await run('浏览器与内核', collectBrowser);
+
+  runSync('系统与硬件', collectHardware);
+  runSync('屏幕与视口', collectScreen);
+  runSync('语言与时区', collectLocale);
+  runSync('页面与性能', collectPage);
+  runSync('插件与 MIME', collectPlugins);
+  runSync('API 特性', collectFeatures);
+  runSync('CSS 能力', collectCSS);
+
   UI.status = 'partial';
   render();
-  phaseB().catch((e) => console.warn('[phaseB]', e));
+
+  const ipTask = refreshPublicIP().catch((e) => console.warn('[ip]', e));
+  await Promise.allSettled([collectHeavy(), phaseB(), ipTask]);
+
+  markAllDone();
+  UI.allDone = true;
+  META.durationMs = Math.round(performance.now() - META.startedAt);
+  UI.status = 'done';
+  render();
 }
 
 async function boot() {
