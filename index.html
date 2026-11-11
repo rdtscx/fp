@@ -3,194 +3,193 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light">
 <title>浏览器指纹与真实参数报告</title>
 <style>
 :root{
-  --bg:#070b10;
-  --panel:#0d1620;
-  --panel2:#0a121a;
-  --line:#1b2a39;
-  --line2:#24384a;
-  --text:#e8f0f8;
-  --muted:#8aa0b6;
-  --dim:#5f7d96;
-  --accent:#4cc9f0;
-  --violet:#a78bfa;
-  --ok:#2dd4bf;
-  --warn:#fbbf24;
+  --bg:#f7f8fa;
+  --panel:#ffffff;
+  --panel2:#fbfcfd;
+  --line:#e6e9ef;
+  --line2:#eef1f5;
+  --text:#1e2733;
+  --muted:#5f6b7a;
+  --dim:#8d97a5;
+  --accent:#3f6fd8;
+  --accent-soft:#eef3fd;
+  --ok:#4b8f6b;
+  --ok-bg:#f2f9f5;
+  --ok-line:#d8ebdf;
+  --na:#9aa3af;
+  --na-bg:#f6f7f9;
+  --na-line:#e4e7ec;
   --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html{color-scheme:dark;scroll-behavior:smooth}
+html{color-scheme:light;scroll-behavior:smooth}
 body{
-  margin:0;color:var(--text);line-height:1.55;
-  background:
-    radial-gradient(1100px 520px at 12% -12%,rgba(76,201,240,.10),transparent 60%),
-    radial-gradient(900px 500px at 100% 0%,rgba(167,139,250,.07),transparent 55%),
-    var(--bg);
+  margin:0;line-height:1.62;color:var(--text);background:var(--bg);
   font-family:"Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
-  -webkit-font-smoothing:antialiased;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
 }
-button{font:inherit;color:#dff3ff;background:#0e2231;border:1px solid #1b3a4c;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:11.5px;line-height:1.4;transition:border-color .15s,color .15s,background .15s}
-button:hover{border-color:#2d6b86;color:#fff}
-button.primary{background:linear-gradient(135deg,#0c6f8a,#155e75);border-color:#1c7f9e;color:#eaffff;font-weight:600}
-button.primary:hover{background:linear-gradient(135deg,#0f819f,#1a708b)}
-button.copy{background:transparent;border-color:#1c2e3e;color:#7895ad;padding:1px 6px;font-size:10px;margin-left:8px;border-radius:6px}
-button.copy:hover{color:#7fe3ff;border-color:#2c6d8a}
+button{font:inherit;color:#354356;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer;font-size:12px;line-height:1.4;transition:border-color .15s,color .15s,background .15s}
+button:hover{border-color:#c9d3e2;color:#16202c;background:#fbfcfe}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.primary:hover{background:#3562c4;border-color:#3562c4;color:#fff}
+button.copy{background:transparent;border-color:var(--line);color:var(--dim);padding:1px 7px;font-size:10px;margin-left:8px;border-radius:6px}
+button.copy:hover{color:var(--accent);border-color:#c7d7f2;background:#f7faff}
 
 /* top bar */
-.topbar{position:sticky;top:0;z-index:30;background:rgba(7,11,16,.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(27,42,57,.9)}
-.topbar-inner{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:9px;min-width:180px}
-.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--violet));color:#04121d;font-weight:800;font-size:11px;display:grid;place-items:center;letter-spacing:.6px;box-shadow:0 4px 14px rgba(76,201,240,.18)}
-.brand strong{display:block;font-size:13px;letter-spacing:.01em}
-.brand small{display:block;color:var(--dim);font-size:10px;letter-spacing:.12em;text-transform:uppercase}
-.status{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;padding:4px 9px;border-radius:999px;border:1px solid #1b2c3a;color:var(--muted);white-space:nowrap;background:#0a141d;margin-left:auto}
-.status .dot{width:6px;height:6px;border-radius:50%;background:#64748b;flex-shrink:0}
-.status.loading{color:#fbbf24;border-color:#4a3a1a;background:#1a1408}
-.status.loading .dot{background:#fbbf24;animation:pulse 1s infinite}
-.status.partial{color:#7dd3fc;border-color:#1d4a66;background:#081a26}
-.status.partial .dot{background:#38bdf8;animation:pulse 1.2s infinite}
-.status.done{color:#5eead4;border-color:#1b4a3e;background:#081f1a}
-.status.done .dot{background:#2dd4bf}
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.topbar-inner{max-width:1320px;margin:0 auto;padding:11px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:190px}
+.logo{width:30px;height:30px;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:11px;display:grid;place-items:center;letter-spacing:.5px;border:1px solid #dbe6fa}
+.brand strong{display:block;font-size:13.5px;font-weight:600;letter-spacing:.01em}
+.brand small{display:block;color:var(--dim);font-size:10.5px}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;background:var(--panel);margin-left:auto}
+.status .dot{width:6px;height:6px;border-radius:50%;background:#a6afba;flex-shrink:0}
+.status.loading{color:#9a7b2f;border-color:#eee0c4;background:#fdf9ef}
+.status.loading .dot{background:#cfa94a;animation:pulse 1s infinite}
+.status.partial{color:#3c6bb5;border-color:#d7e2f5;background:#f5f9ff}
+.status.partial .dot{background:#6d97d8;animation:pulse 1.2s infinite}
+.status.done{color:#3f8060;border-color:#d9ebdf;background:#f4faf6}
+.status.done .dot{background:#6aab84}
 .actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 .search{position:relative;display:flex;align-items:center}
-.search .icon{position:absolute;left:9px;width:10px;height:10px;border:1.5px solid var(--dim);border-radius:50%;pointer-events:none}
+.search .icon{position:absolute;left:10px;width:10px;height:10px;border:1.5px solid var(--dim);border-radius:50%;pointer-events:none}
 .search .icon::after{content:"";position:absolute;width:5px;height:1.5px;background:var(--dim);transform:rotate(45deg);left:8px;top:9px}
-.search input{font:inherit;font-size:11.5px;color:var(--text);background:#08111a;border:1px solid #182a39;border-radius:8px;padding:6px 56px 6px 27px;outline:none;width:220px;transition:border-color .15s,box-shadow .15s}
-.search input::placeholder{color:#4f6a82}
-.search input:focus{border-color:#2a6a86;box-shadow:0 0 0 3px rgba(76,201,240,.08)}
-.search #filter-count{position:absolute;right:8px;font-size:9.5px;color:#5f7d96;pointer-events:none}
+.search input{font:inherit;font-size:12px;color:var(--text);background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 62px 7px 28px;outline:none;width:250px;transition:border-color .15s,box-shadow .15s}
+.search input::placeholder{color:#a9b2bd}
+.search input:focus{border-color:#b9cdf0;box-shadow:0 0 0 3px rgba(63,111,216,.08)}
+.search #filter-count{position:absolute;right:9px;font-size:9.5px;color:var(--dim);pointer-events:none}
 .progress{height:2px;background:transparent;overflow:hidden}
-.progress.active{background:#0f1b27}
-.progress span{display:block;height:100%;width:30%;background:linear-gradient(90deg,transparent,var(--accent),var(--violet),transparent);animation:slide 1.3s linear infinite}
+.progress.active{background:#eef1f6}
+.progress span{display:block;height:100%;width:26%;background:linear-gradient(90deg,transparent,#c3d6f6,transparent);animation:slide 1.4s linear infinite}
 .progress:not(.active) span{display:none}
 
-.wrap{max-width:1180px;margin:0 auto;padding:16px 16px 48px}
+.wrap{max-width:1320px;margin:0 auto;padding:20px 22px 56px}
 
 /* hero */
-.hero{position:relative;border:1px solid var(--line);border-radius:20px;padding:24px;background:radial-gradient(900px 300px at 8% 0%,rgba(76,201,240,.10),transparent 62%),linear-gradient(160deg,#0b1520,#091018 72%);overflow:hidden;margin-bottom:12px}
-.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 60%,rgba(167,139,250,.05));pointer-events:none}
-.hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,440px);gap:26px;align-items:start}
-.eyebrow{font-size:10px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase}
-h1{font-size:clamp(21px,3vw,31px);margin:5px 0 7px;line-height:1.22;letter-spacing:-.01em}
-.lead{color:var(--muted);font-size:12.5px;margin:0 0 14px;max-width:760px}
-.hero-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:10.5px;color:var(--dim);align-items:center}
-.hero-meta span{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border:1px solid #162432;border-radius:999px;background:#0a131c;max-width:100%;word-break:break-word}
-.live-pill{color:#5eead4;border-color:#1b4a3e!important;background:#081f1a!important}
-.fingerprint-card{background:#08111a;border:1px solid #1b3a4c;border-radius:15px;padding:15px 16px;box-shadow:0 14px 34px rgba(0,0,0,.3)}
-.hash-row{padding:9px 0;border-top:1px dashed #16293a}
+.hero{border:1px solid var(--line);border-radius:14px;padding:24px 26px;background:var(--panel);margin-bottom:14px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,440px);gap:30px;align-items:start}
+h1{font-size:clamp(21px,2.4vw,28px);margin:6px 0 8px;line-height:1.25;letter-spacing:-.01em;font-weight:650}
+.hero-meta{display:flex;flex-wrap:wrap;gap:7px;font-size:11px;color:var(--dim);align-items:center}
+.hero-meta span{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);max-width:100%;word-break:break-word}
+.live-pill{color:#3f8060!important;border-color:#d9ebdf!important;background:#f4faf6!important}
+.fingerprint-card{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:15px 16px}
+.hash-row{padding:9px 0;border-top:1px dashed var(--line)}
 .hash-row:first-child{border-top:0;padding-top:0}
-.hash-label{display:block;font-size:9.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
-.hash-value{display:block;font-family:var(--mono);font-size:12px;color:#7fe3ff;word-break:break-all;line-height:1.65;margin:5px 0 0;min-height:16px}
+.hash-label{display:block;font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+.hash-value{display:block;font-family:var(--mono);font-size:11.5px;color:#33507a;word-break:break-all;line-height:1.7;margin:5px 0 0;min-height:16px}
 .hash-row .copy{margin-top:5px}
-.hash-sub{font-size:10px;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px dashed #16293a;word-break:break-all}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px;margin-top:14px;position:relative;z-index:1}
-.stat{background:#0a131c;border:1px solid #162432;border-radius:10px;padding:8px 10px;min-width:0}
-.stat b{display:block;font-size:9px;letter-spacing:.12em;color:var(--dim);font-weight:600;text-transform:uppercase;margin-bottom:2px}
-.stat span{font-size:11.5px;color:var(--text);word-break:break-word;display:block;line-height:1.45}
-.mini{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;position:relative;z-index:1}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin-top:18px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;min-width:0}
+.stat b{display:block;font-size:9.5px;letter-spacing:.1em;color:var(--dim);font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.stat span{font-size:12px;color:var(--text);word-break:break-word;display:block;line-height:1.5}
+.mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .mini .chip{font-family:var(--mono);font-size:10px}
-.skeleton{display:block;background:linear-gradient(90deg,#0e1a25,#172936,#0e1a25);background-size:200% 100%;animation:shimmer 1.3s linear infinite;border-radius:5px}
+.skeleton{display:block;background:linear-gradient(90deg,#eef1f5,#f7f9fb,#eef1f5);background-size:200% 100%;animation:shimmer 1.4s linear infinite;border-radius:5px}
 .sk-line{height:12px;width:78%}
 .sk-card{height:110px;margin-bottom:10px}
 .sk-chip{height:16px;width:100px;display:inline-block}
 
 /* nav */
-.nav{display:flex;align-items:center;gap:10px;margin:10px 0 12px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:rgba(10,17,24,.72)}
-.nav-links{display:flex;gap:4px;overflow-x:auto;flex:1;padding:2px;scrollbar-width:none}
+.nav{display:flex;align-items:center;gap:10px;margin:12px 0 14px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.nav-links{display:flex;gap:3px;overflow-x:auto;flex:1;padding:2px;scrollbar-width:none}
 .nav-links::-webkit-scrollbar{display:none}
-.nav-links a{white-space:nowrap;color:var(--muted);text-decoration:none;font-size:11px;padding:5px 9px;border-radius:8px;display:inline-flex;gap:6px;align-items:center;transition:background .15s,color .15s}
-.nav-links a:hover{background:#0f1d29;color:var(--text)}
-.nav-links a.active{background:#0d2633;color:#9fe8ff;box-shadow:inset 0 0 0 1px #1b4a5e}
-.nav-links b{font-weight:600;color:var(--dim);font-size:9px;background:#0a141d;border:1px solid #142433;border-radius:4px;padding:0 4px;margin-left:1px}
+.nav-links a{white-space:nowrap;color:var(--muted);text-decoration:none;font-size:11.5px;padding:5px 9px;border-radius:7px;display:inline-flex;gap:6px;align-items:center;transition:background .15s,color .15s}
+.nav-links a:hover{background:#f3f6fb;color:var(--text)}
+.nav-links a.active{background:var(--accent-soft);color:#2f5db8}
+.nav-links b{font-weight:500;color:var(--dim);font-size:9px;background:#f5f7fa;border:1px solid var(--line);border-radius:4px;padding:0 4px}
 .nav-tools{display:flex;gap:4px;flex-shrink:0}
-.nav-tools button{padding:4px 8px;font-size:10px;background:#0b1721}
+.nav-tools button{padding:4px 8px;font-size:10.5px;background:var(--panel2)}
 
 /* cards */
-.card{background:linear-gradient(180deg,#0d1620,#0a121a);border:1px solid var(--line);border-radius:14px;margin:10px 0;overflow:hidden;scroll-margin-top:86px}
-.card summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;list-style:none;user-select:none;transition:background .15s}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;margin:10px 0;overflow:hidden;scroll-margin-top:88px}
+.card summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;list-style:none;user-select:none;transition:background .15s}
 .card summary::-webkit-details-marker{display:none}
-.card summary:hover{background:#0e1a25}
+.card summary:hover{background:var(--panel2)}
 .sum-main{min-width:0;display:block}
 .title{display:block;font-size:14px;font-weight:600;color:var(--text);letter-spacing:.005em}
-.desc{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5}
-.sum-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
-.count{font-size:10px;color:var(--dim);background:#0a141d;border:1px solid #172735;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.desc{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.55}
+.sum-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.count{font-size:10px;color:var(--dim);background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap}
 .chev{width:7px;height:7px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);transition:transform .2s;margin:0 5px}
 .card[open] .chev{transform:rotate(-135deg)}
-.pending-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(76,201,240,.12);animation:pulse 1.2s infinite}
-.sec-body{padding:0 16px 14px;border-top:1px solid #13202c}
+.pending-dot{width:7px;height:7px;border-radius:50%;background:#7aa6e0;box-shadow:0 0 0 3px rgba(63,111,216,.1);animation:pulse 1.2s infinite}
+.sec-body{padding:0 18px 16px;border-top:1px solid var(--line2)}
 .rows{padding-top:2px}
 
 /* rows */
-.row{display:grid;grid-template-columns:minmax(145px,225px) minmax(0,1fr);gap:16px;padding:8px 0;border-top:1px dashed #16222f;align-items:start}
+.row{display:grid;grid-template-columns:minmax(160px,240px) minmax(0,1fr);gap:20px;padding:9px 0;border-top:1px dashed var(--line2);align-items:start}
 .row:first-child{border-top:0}
 .row .k{min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:1px 8px}
-.label{display:inline;font-size:12px;color:#cfe0ef;word-break:break-word}
-.src{display:inline;font-size:9px;font-family:var(--mono);color:#5f7d96;margin:0;word-break:break-word;line-height:1.45;background:#0a141d;border:1px solid #142433;border-radius:4px;padding:0 4px}
-.vcell{min-width:0;font-size:12px;line-height:1.6}
+.label{display:inline;font-size:12.5px;color:#33404f;word-break:break-word}
+.src{display:inline;font-size:9px;font-family:var(--mono);color:var(--dim);word-break:break-word;line-height:1.45;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.vcell{min-width:0;font-size:12.5px;line-height:1.65}
 .v{word-break:break-word;white-space:pre-wrap}
-.v.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;max-height:4.8em}
+.v.na{color:var(--na)}
+.v.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;max-height:4.9em}
 .mono{font-family:var(--mono);font-size:11.5px}
-.ratio{font-size:9.5px;color:#4f728c;margin-left:6px;font-family:var(--mono)}
-.chips{display:flex;flex-wrap:wrap;gap:4px}
-.chip{display:inline-flex;align-items:center;gap:4px;background:#0b1721;border:1px solid #1a2c3c;border-radius:6px;padding:2px 7px;font-size:10.5px;color:#cfe6f8;word-break:break-word;max-width:100%}
-.chip.ok{background:#081f1a;border-color:#1b4a3e;color:#a7f3d0}
+.ratio{font-size:9.5px;color:var(--dim);margin-left:6px;font-family:var(--mono)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:10.5px;color:#3b4a5c;word-break:break-word;max-width:100%}
+.chip.ok{background:var(--ok-bg);border-color:var(--ok-line);color:#41795b}
+.chip.no{background:var(--na-bg);border-color:var(--na-line);color:var(--na)}
 .fgrid{display:flex;flex-wrap:wrap;gap:5px}
 .fgrid .chip b{font-weight:500}
-.fgrid .chip i{font-style:normal;font-size:9px;color:#6f9e8f;margin-left:4px;opacity:.9}
-.hint{display:block;font-size:9.5px;color:#5f7d96;margin-top:3px;line-height:1.45}
-.hint::before{content:"用途 · ";color:#3e566b}
-pre.json{margin:0;padding:9px 11px;background:#08111a;border:1px solid #16222f;border-radius:8px;font-family:var(--mono);font-size:10.5px;color:#b9d6ee;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto}
+.fgrid .chip i{font-style:normal;font-size:9px;color:#6f9a83;margin-left:4px;opacity:.9}
+.fgrid .chip.no i{color:#a9b2bd}
+.hint{display:block;font-size:10px;color:var(--dim);margin-top:3px;line-height:1.5}
+.hint::before{content:"用途 · ";color:#aeb7c2}
+pre.json{margin:0;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font-family:var(--mono);font-size:10.5px;color:#46586e;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto}
 .muted{color:var(--dim);font-size:11.5px}
 
 /* states */
-.loading-panel{color:var(--muted);font-size:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#0a121a;margin:10px 0}
+.loading-panel{color:var(--muted);font-size:12px;padding:16px;border:1px solid var(--line);border-radius:11px;background:var(--panel);margin:10px 0}
 .loading-panel p{margin:8px 0 0}
-.empty{color:var(--dim);font-size:12px;text-align:center;padding:22px;border:1px dashed #1b2a39;border-radius:12px;margin:10px 0;background:#09111a}
+.empty{color:var(--dim);font-size:12px;text-align:center;padding:24px;border:1px dashed var(--line);border-radius:10px;margin:10px 0;background:var(--panel)}
 #filter-empty{margin:14px 0}
-footer{color:#5b748b;font-size:10.5px;margin-top:26px;line-height:1.7;border-top:1px solid #13202c;padding-top:14px}
+footer{color:var(--dim);font-size:10.5px;margin-top:28px;line-height:1.7;border-top:1px solid var(--line);padding-top:14px}
 footer p{margin:3px 0}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(16px);background:#0e2536;border:1px solid #1d5a7a;color:#dff3ff;padding:8px 16px;border-radius:999px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:99;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);background:#fff;border:1px solid #cfdcef;color:#2c3a4c;padding:8px 16px;border-radius:999px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:99;box-shadow:0 8px 24px rgba(31,45,66,.12)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 @keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(430%)}}
-@keyframes pulse{50%{opacity:.35}}
+@keyframes pulse{50%{opacity:.4}}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-@media (max-width:880px){
-  .hero-grid{grid-template-columns:1fr;gap:16px}
-  .fingerprint-card{box-shadow:none}
+@media (min-width:1500px){
+  .topbar-inner,.wrap{max-width:1440px}
 }
-@media (max-width:700px){
-  .topbar-inner{padding:8px 10px;gap:8px}
+@media (max-width:980px){
+  .hero-grid{grid-template-columns:1fr;gap:18px}
+}
+@media (max-width:760px){
+  .topbar-inner{padding:9px 12px;gap:8px}
   .brand{min-width:0}
   .brand small{display:none}
   .status{order:2;margin-left:auto;font-size:10px;padding:3px 8px}
   .actions{order:3;width:100%;gap:6px}
   .search{flex:1;min-width:0}
-  .search input{width:100%;padding-right:52px}
-  .actions button{padding:6px 8px;font-size:10.5px}
-  .actions button.primary{padding:6px 9px}
-  .wrap{padding:12px 10px 40px}
-  .hero{padding:17px 15px;border-radius:16px}
+  .search input{width:100%;padding-right:56px}
+  .actions button{padding:6px 8px;font-size:11px}
+  .wrap{padding:14px 12px 44px}
+  .hero{padding:18px 15px;border-radius:12px}
   .stat-grid{grid-template-columns:repeat(2,1fr)}
   .nav{flex-wrap:wrap;padding:7px 8px}
   .nav-tools{display:none}
-  .card summary{padding:12px 13px}
-  .sec-body{padding:0 13px 12px}
-  .row{grid-template-columns:1fr;gap:2px;padding:7px 0}
-  .desc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 120px)}
+  .card summary{padding:12px 14px}
+  .sec-body{padding:0 14px 12px}
+  .row{grid-template-columns:1fr;gap:3px;padding:8px 0}
+  .desc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 130px)}
   .mini .chip{flex:1 1 100%;justify-content:space-between}
   .hash-value{font-size:11px}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
-
 </style>
 </head>
 <body>
@@ -226,10 +225,6 @@ footer p{margin:3px 0}
   <section id="hero" class="hero"></section>
   <div id="sections"></div>
   <div id="filter-empty" class="empty" hidden>没有匹配的参数</div>
-  <footer>
-    <p>仅展示当前浏览器实际返回的数据；不支持的接口、失败项和空值已自动隐藏。</p>
-    <p>页面为纯静态，无后端。除公网 IP / 归属地会请求 api.ipify.org、api64.ipify.org、ipwho.is、ipinfo.io 外，数据不上传；每次打开都会重新采集，不使用本地缓存。</p>
-  </footer>
 </main>
 
 <div id="toast" class="toast"></div>
@@ -264,7 +259,7 @@ const FONT_LIST = [
 
 const SEC_DEFS = [
   { id: 'browser', title: '浏览器与内核', desc: 'User-Agent、Client Hints、渲染引擎与版本；解析值均标注依据。' },
-  { id: 'hardware', title: '系统与硬件', desc: '操作系统、CPU 架构、核心与内存、触控、电池及手柄。' },
+  { id: 'hardware', title: '系统与硬件', desc: '网络地址、操作系统、CPU 架构、指针、电池与手柄。' },
   { id: 'screen', title: '屏幕与视口', desc: '屏幕尺寸、DPR、视觉视口、CSS 单位与匹配的媒体查询。' },
   { id: 'locale', title: '语言与时区', desc: 'Intl 区域、时区、夏令时、日期/数字/货币格式。' },
   { id: 'graphics', title: '图形能力', desc: 'WebGL 参数、扩展、着色器精度；WebGPU 适配器信息。' },
@@ -272,11 +267,11 @@ const SEC_DEFS = [
   { id: 'fonts', title: '字体检测', desc: '通过 Canvas 文本宽度差异检测字体是否可用。' },
   { id: 'audio', title: '音频与语音', desc: 'AudioContext 参数、离线渲染与语音合成 voices。' },
   { id: 'media', title: '媒体与编解码', desc: '设备枚举、支持约束与当前浏览器支持的编解码。' },
-  { id: 'network', title: '网络', desc: 'Connection API、在线状态、HTTP 协议与公网出口。' },
+  { id: 'network', title: '网络', desc: '公网 IPv4 / IPv6、内网地址、在线状态与出口归属。' },
   { id: 'storage', title: '存储与 Cookie', desc: '本地存储、Cookie、IndexedDB 实测与配额。' },
   { id: 'permissions', title: '权限状态', desc: '浏览器记录的权限状态；未提供该 API 时不显示。' },
-  { id: 'features', title: 'API 特性', desc: '仅列出当前浏览器支持的特性，括号内为支持数 / 检测数。' },
-  { id: 'css', title: 'CSS 能力', desc: '仅列出当前浏览器支持的 CSS 特性。' },
+  { id: 'features', title: 'API 特性', desc: '绿色为支持、灰色为不支持，括号内为支持数 / 检测数。' },
+  { id: 'css', title: 'CSS 能力', desc: '绿色为支持、灰色为不支持。' },
   { id: 'plugins', title: '插件与 MIME', desc: '浏览器实际返回的插件和 MIME 类型。' },
   { id: 'webrtc', title: 'WebRTC 候选', desc: '未配置 STUN/TURN 时收集到的本地 ICE 候选；无候选时不显示。' },
   { id: 'page', title: '页面与性能', desc: '文档信息、安全上下文与导航时序。' },
@@ -303,6 +298,9 @@ const SUMMARY = {
   tz: '—', lang: '—', gpu: '—',
   hashes: { stable: null, composite: null, canvas: null, audio: null, webgl: null, fonts: null, layout: null }
 };
+
+const IPSTATE = { v4: null, v6: null, lan: null, geo: null };
+let ipRowsAdded = false;
 
 const FP = {};
 let uaHigh = null;
@@ -506,6 +504,7 @@ const HINTS = [
   [/^navigator\.onLine$/, '在线状态'],
   [/^公网 IPv4$/, '出口地址'],
   [/^公网 IPv6/, '出口地址'],
+  [/^本机网络 IP$|^内网地址$/, '局域网地址'],
   [/^出口归属地/, 'IP 归属'],
 
   [/^localStorage/, '本地存储'],
@@ -679,21 +678,27 @@ function add(secId, label, value, source, opts) {
   let v;
   let total;
   let supported;
+  let na = false;
+  let rawText = null;
   if (o.type === 'features') {
     const arr = Array.isArray(value) ? value : [];
-    const items = arr.filter((x) => x && x.ok === true).map((x) => ({
+    const items = arr.filter(Boolean).map((x) => ({
       ...x,
+      ok: x.ok === true,
       hint: o.hint || (secId === 'css' ? cssHint(x.name) : secId === 'screen' ? mediaHint(x.name) : featureHint(x.name))
     }));
     if (!items.length) return null;
     v = items;
     total = arr.length;
-    supported = items.length;
+    supported = items.filter((x) => x.ok).length;
   } else {
     v = clean(value);
-    if (v === undefined) return null;
+    if (v === undefined) {
+      na = true;
+      if (typeof value === 'string' && value.trim()) rawText = value.trim();
+    }
   }
-  const row = { label, value: v, source, ...o, total, supported, hint: o.hint || hintFor(secId, label) };
+  const row = { label, value: v, source, ...o, total, supported, na, rawText, hint: o.hint || hintFor(secId, label) };
   st.rows.push(row);
   scheduleRender();
   return row;
@@ -708,7 +713,10 @@ function scheduleRender() {
 function fmtValue(v, row) {
   if (row && row.type === 'features') {
     const items = Array.isArray(v) ? v : [];
-    return `<div class="fgrid">${items.map((it) => `<span class="chip ok" title="${esc(it.expr || it.name)}${it.hint ? ' · ' + it.hint : ''}"><b>${esc(it.name)}</b>${it.hint ? `<i>${esc(it.hint)}</i>` : ''}</span>`).join('')}</div>`;
+    return `<div class="fgrid">${items.map((it) => `<span class="chip ${it.ok ? 'ok' : 'no'}" title="${esc(it.expr || it.name)}${it.hint ? ' · ' + it.hint : ''}"><b>${esc(it.name)}</b>${it.hint ? `<i>${esc(it.hint)}</i>` : ''}</span>`).join('')}</div>`;
+  }
+  if (v === null || v === undefined) {
+    return `<span class="v na">${esc((row && row.rawText) || '不可用')}</span>`;
   }
   if (ArrayBuffer.isView(v)) v = Array.from(v);
   if (Array.isArray(v)) {
@@ -726,12 +734,14 @@ function fmtValue(v, row) {
 }
 
 function renderRow(r) {
+  const live = r.liveKey ? ` data-live="${esc(r.liveKey)}"` : '';
+  const naCls = r.na ? ' na' : '';
   if (r.type === 'features') {
     const ratio = r.total ? `<span class="ratio">${r.supported}/${r.total}</span>` : '';
-    return `<div class="row"><div class="k"><span class="label">${esc(r.label)}</span>${ratio}<span class="src">${esc(r.source)}</span></div><div class="vcell">${fmtValue(r.value, r)}</div></div>`;
+    return `<div class="row${naCls}"${live}><div class="k"><span class="label">${esc(r.label)}</span>${ratio}<span class="src">${esc(r.source)}</span></div><div class="vcell">${fmtValue(r.value, r)}</div></div>`;
   }
   const hint = r.hint ? `<div class="hint">${esc(r.hint)}</div>` : '';
-  return `<div class="row"><div class="k"><span class="label">${esc(r.label)}</span><span class="src">${esc(r.source)}</span></div><div class="vcell">${fmtValue(r.value, r)}${hint}</div></div>`;
+  return `<div class="row${naCls}"${live}><div class="k"><span class="label">${esc(r.label)}</span><span class="src">${esc(r.source)}</span></div><div class="vcell">${fmtValue(r.value, r)}${hint}</div></div>`;
 }
 
 function totalRows() {
@@ -766,10 +776,8 @@ function renderHero() {
 
   const total = totalRows();
   const liveNote = UI.status === 'done'
-    ? `<span class="live-pill">实时采集</span><span>${total} 项 · ${formatDuration(META.durationMs)}</span>`
-    : UI.status === 'partial'
-      ? `<span class="live-pill">实时采集</span><span>核心数据已就绪 · 正在补充</span>`
-      : `<span class="live-pill">实时采集</span><span>正在读取浏览器接口</span>`;
+    ? `<span class="live-pill">实时更新</span><span>${total} 项 · ${formatDuration(META.durationMs)}</span>`
+    : `<span class="live-pill">实时更新</span><span>采集中 · ${total} 项</span>`;
 
   const hashBlock = (label, val, primary) => {
     const body = val
@@ -786,9 +794,7 @@ function renderHero() {
   $('#hero').innerHTML = `
     <div class="hero-grid">
       <div>
-        <div class="eyebrow">BROWSER FINGERPRINT · REAL VALUES</div>
         <h1>浏览器指纹与真实参数</h1>
-        <p class="lead">自动读取当前浏览器实际可用的接口；不支持、读取失败或空值已隐藏。每次打开都会重新采集。</p>
         <div class="hero-meta">
           <span>${esc(gen)}</span>
           ${liveNote}
@@ -797,7 +803,6 @@ function renderHero() {
       <div class="fingerprint-card">
         ${hashBlock('稳定设备指纹 · SHA-256', h.stable, true)}
         ${hashBlock('综合指纹（含 UA 版本）', h.composite, false)}
-        <div class="hash-sub">稳定指纹不含浏览器版本，适合设备级比对；综合指纹会随 UA / 引擎升级变化。</div>
       </div>
     </div>
     <div class="stat-grid">
@@ -815,7 +820,7 @@ function renderStatus() {
   else label = `完成 · ${formatDuration(META.durationMs)} · ${total} 项`;
   const el = $('#status');
   el.className = 'status ' + mode;
-  el.title = '每次打开都会重新采集';
+  el.title = '数据随浏览器与设备状态实时更新';
   $('#status-text').textContent = label;
   $('#progress').classList.toggle('active', mode === 'loading' || mode === 'partial');
 }
@@ -911,6 +916,82 @@ function render() {
   renderSections();
   applyFilter();
   updateActiveNav();
+}
+
+const LIVE = new Map();
+let liveScrollRaf = 0;
+
+function liveRow(secId, key, label, source, fn, opts) {
+  const row = add(secId, label, fn(), source, opts);
+  if (row) {
+    row.liveKey = key;
+    LIVE.set(key, { row, fn, secId });
+  }
+  return row;
+}
+
+function refreshLiveDom() {
+  for (const [key, entry] of LIVE.entries()) {
+    const { row, fn, secId } = entry;
+    let raw;
+    let next;
+    try {
+      raw = fn();
+      next = clean(raw);
+    } catch (e) {
+      raw = undefined;
+      next = undefined;
+    }
+    if (row.type === 'features') {
+      const items = (Array.isArray(next) ? next : []).filter(Boolean).map((x) => ({
+        ...x,
+        ok: x.ok === true,
+        hint: x.hint || (secId === 'css' ? cssHint(x.name) : secId === 'screen' ? mediaHint(x.name) : featureHint(x.name))
+      }));
+      if (JSON.stringify(items) === JSON.stringify(row.value)) continue;
+      row.value = items;
+      row.supported = items.filter((x) => x.ok).length;
+    } else if (next === undefined) {
+      const msg = (typeof raw === 'string' && raw.trim()) ? raw.trim() : null;
+      if (row.na && row.rawText === msg) continue;
+      row.value = null;
+      row.na = true;
+      row.rawText = msg;
+    } else {
+      if (!row.na && JSON.stringify(next) === JSON.stringify(row.value)) continue;
+      row.value = next;
+      row.na = false;
+      row.rawText = null;
+    }
+    const el = document.querySelector('[data-live="' + key + '"]');
+    if (el) {
+      const tpl = document.createElement('div');
+      tpl.innerHTML = renderRow(row);
+      const fresh = tpl.firstElementChild;
+      if (fresh) el.replaceWith(fresh);
+    }
+  }
+}
+
+function startLiveRefresh() {
+  refreshLiveDom();
+  setInterval(() => {
+    if (!document.hidden) refreshLiveDom();
+  }, 1000);
+  setInterval(() => {
+    if (!document.hidden && navigator.onLine) refreshPublicIP();
+  }, 90000);
+  window.addEventListener('resize', refreshLiveDom, { passive: true });
+  window.addEventListener('orientationchange', refreshLiveDom);
+  window.addEventListener('online', () => { refreshLiveDom(); refreshPublicIP(); });
+  window.addEventListener('offline', refreshLiveDom);
+  window.addEventListener('focus', refreshLiveDom);
+  window.addEventListener('blur', refreshLiveDom);
+  document.addEventListener('visibilitychange', refreshLiveDom);
+  window.addEventListener('scroll', () => {
+    if (liveScrollRaf) return;
+    liveScrollRaf = requestAnimationFrame(() => { liveScrollRaf = 0; refreshLiveDom(); });
+  }, { passive: true });
 }
 
 function buildReport() {
@@ -1272,6 +1353,9 @@ function collectHardware() {
   SUMMARY.os = os.short;
 
   add('hardware', 'navigator.platform', navigator.platform, 'navigator.platform');
+  liveRow('hardware', 'hw-ipv4', '公网 IPv4', 'api.ipify.org', () => IPSTATE.v4);
+  liveRow('hardware', 'hw-ipv6', '公网 IPv6', 'api6.ipify.org', () => IPSTATE.v6);
+  liveRow('hardware', 'hw-lan', '本机网络 IP', 'WebRTC 本地候选（无 STUN）', () => IPSTATE.lan);
   if (uaHigh) {
     add('hardware', 'UA-CH platformVersion', uaHigh.platformVersion || '不可用', 'getHighEntropyValues(["platformVersion"])');
     add('hardware', 'CPU 架构', uaHigh.architecture || '不可用', 'getHighEntropyValues(["architecture"])');
@@ -1293,7 +1377,11 @@ function collectHardware() {
     const pads = Array.from(navigator.getGamepads()).filter(Boolean);
     if (pads.length) {
       add('hardware', '已连接游戏手柄', pads.map((g) => ({ id: g.id, index: g.index, connected: g.connected, mapping: g.mapping, axes: g.axes.length, buttons: g.buttons.length })), 'navigator.getGamepads()');
+    } else {
+      add('hardware', '已连接游戏手柄', '无（未检测到已连接手柄）', 'navigator.getGamepads()');
     }
+  } else {
+    add('hardware', '已连接游戏手柄', '不支持（Gamepad API 不存在）', 'navigator.getGamepads');
   }
 
   const mobile = uaHigh ? uaHigh.mobile : (uadMobile());
@@ -1309,19 +1397,24 @@ function uadMobile() {
 
 async function collectBattery() {
   if (!navigator.getBattery) {
-    add('hardware', '电池 API', '不可用', 'navigator.getBattery 不存在');
+    add('hardware', '电池 API', '不支持（navigator.getBattery 不存在）', 'navigator.getBattery');
     return;
   }
+  let b;
   try {
-    const b = await navigator.getBattery();
-    const num = (v) => Number.isFinite(v) ? v : '不可用（Infinity/未知）';
-    add('hardware', '电池充电状态', b.charging, 'BatteryManager.charging');
-    add('hardware', '电池电量', Math.round(b.level * 1000) / 10 + '%', 'BatteryManager.level');
-    add('hardware', '充满所需时间 (秒)', num(b.chargingTime), 'BatteryManager.chargingTime');
-    add('hardware', '耗尽所需时间 (秒)', num(b.dischargingTime), 'BatteryManager.dischargingTime');
+    b = await navigator.getBattery();
   } catch (e) {
     add('hardware', '电池信息', '读取失败：' + (e.name || 'Error'), 'navigator.getBattery()');
+    return;
   }
+  const num = (v) => (Number.isFinite(v) ? v : '未知（Infinity）');
+  liveRow('hardware', 'bat-charging', '电池充电状态', 'BatteryManager.charging', () => b.charging);
+  liveRow('hardware', 'bat-level', '电池电量', 'BatteryManager.level', () => Math.round(b.level * 1000) / 10 + '%');
+  liveRow('hardware', 'bat-charge-time', '充满所需时间 (秒)', 'BatteryManager.chargingTime', () => num(b.chargingTime));
+  liveRow('hardware', 'bat-discharge-time', '耗尽所需时间 (秒)', 'BatteryManager.dischargingTime', () => num(b.dischargingTime));
+  ['chargingchange', 'levelchange', 'chargingtimechange', 'dischargingtimechange'].forEach((ev) => {
+    try { b.addEventListener(ev, refreshLiveDom); } catch (e) { /* 不支持该事件 */ }
+  });
 }
 
 function measureUnit(prop, value) {
@@ -1335,32 +1428,32 @@ function measureUnit(prop, value) {
 
 function collectScreen() {
   const s = window.screen;
-  add('screen', 'screen.width × height', `${s.width} × ${s.height}`, 'screen.width / screen.height');
-  const avail = { width: s.availWidth, height: s.availHeight };
-  if (typeof s.availLeft === 'number') avail.left = s.availLeft;
-  if (typeof s.availTop === 'number') avail.top = s.availTop;
-  add('screen', 'screen.avail', avail, 'screen.availWidth / availHeight / availLeft / availTop');
+  liveRow('screen', 'scr-size', 'screen.width × height', 'screen.width / screen.height', () => `${screen.width} × ${screen.height}`);
+  liveRow('screen', 'scr-avail', 'screen.avail', 'screen.availWidth / availHeight / availLeft / availTop', () => {
+    const a = { width: screen.availWidth, height: screen.availHeight };
+    if (typeof screen.availLeft === 'number') a.left = screen.availLeft;
+    if (typeof screen.availTop === 'number') a.top = screen.availTop;
+    return a;
+  });
   add('screen', 'screen.colorDepth', s.colorDepth, 'screen.colorDepth');
   add('screen', 'screen.pixelDepth', s.pixelDepth, 'screen.pixelDepth');
-  add('screen', '屏幕方向', s.orientation ? `${s.orientation.type} · ${s.orientation.angle}°` : '不可用', 'screen.orientation');
+  liveRow('screen', 'scr-orient', '屏幕方向', 'screen.orientation', () => (screen.orientation ? `${screen.orientation.type} · ${screen.orientation.angle}°` : null));
   add('screen', 'screen.isExtended', typeof s.isExtended === 'boolean' ? s.isExtended : '不可用', 'screen.isExtended');
-  add('screen', 'devicePixelRatio', devicePixelRatio, 'window.devicePixelRatio');
-  add('screen', 'innerWidth × innerHeight', `${innerWidth} × ${innerHeight}`, 'window.innerWidth / innerHeight');
-  add('screen', 'outerWidth × outerHeight', `${outerWidth} × ${outerHeight}`, 'window.outerWidth / outerHeight');
-  add('screen', 'screenX / screenY', `${screenX} / ${screenY}`, 'window.screenX / screenY');
-  add('screen', 'scrollX / scrollY', `${Math.round(scrollX)} / ${Math.round(scrollY)}`, 'window.scrollX / scrollY');
-  add('screen', '文档滚动尺寸', `${document.documentElement.scrollWidth} × ${document.documentElement.scrollHeight}`, 'documentElement.scrollWidth / scrollHeight');
-
-  const vv = window.visualViewport;
-  if (vv) {
-    add('screen', 'visualViewport', {
+  liveRow('screen', 'scr-dpr', 'devicePixelRatio', 'window.devicePixelRatio', () => devicePixelRatio);
+  liveRow('screen', 'scr-inner', 'innerWidth × innerHeight', 'window.innerWidth / innerHeight', () => `${innerWidth} × ${innerHeight}`);
+  liveRow('screen', 'scr-outer', 'outerWidth × outerHeight', 'window.outerWidth / outerHeight', () => `${outerWidth} × ${outerHeight}`);
+  liveRow('screen', 'scr-pos', 'screenX / screenY', 'window.screenX / screenY', () => `${screenX} / ${screenY}`);
+  liveRow('screen', 'scr-scroll', 'scrollX / scrollY', 'window.scrollX / scrollY', () => `${Math.round(scrollX)} / ${Math.round(scrollY)}`);
+  liveRow('screen', 'scr-doc', '文档滚动尺寸', 'documentElement.scrollWidth / scrollHeight', () => `${document.documentElement.scrollWidth} × ${document.documentElement.scrollHeight}`);
+  liveRow('screen', 'scr-vv', 'visualViewport', 'window.visualViewport', () => {
+    const vv = window.visualViewport;
+    if (!vv) return null;
+    return {
       width: vv.width, height: vv.height, scale: vv.scale,
       offsetLeft: vv.offsetLeft, offsetTop: vv.offsetTop,
       pageLeft: vv.pageLeft, pageTop: vv.pageTop
-    }, 'window.visualViewport');
-  } else {
-    add('screen', 'visualViewport', '不可用', 'window.visualViewport 不存在');
-  }
+    };
+  });
 
   const units = [
     ['1vw', 'width', '1vw'], ['1vh', 'height', '1vh'], ['1dvh', 'height', '1dvh'],
@@ -1412,7 +1505,7 @@ function collectScreen() {
     ['resolution: 3dppx', '(resolution: 3dppx)'],
     ['prefers-color-scheme: no-preference', '(prefers-color-scheme: no-preference)']
   ];
-  add('screen', '媒体查询匹配结果（✓=当前匹配）', mqs.map(([name, q]) => ({ name, ok: matchMedia(q).matches, expr: q })), 'window.matchMedia', { type: 'features' });
+  liveRow('screen', 'scr-mq', '媒体查询匹配结果（✓=当前匹配）', 'window.matchMedia', () => mqs.map(([name, q]) => ({ name, ok: matchMedia(q).matches, expr: q })), { type: 'features' });
 
   SUMMARY.screen = `${s.width}×${s.height} · DPR ${devicePixelRatio}`;
 }
@@ -1583,14 +1676,21 @@ async function collectGraphics() {
 }
 
 async function collectWebGPU() {
-  if (!navigator.gpu) return;
+  if (!navigator.gpu) {
+    add('graphics', 'WebGPU 适配器', '不支持（navigator.gpu 不存在）', 'navigator.gpu');
+    return;
+  }
   let adapter = null;
   try {
     adapter = await navigator.gpu.requestAdapter();
   } catch (e) {
+    add('graphics', 'WebGPU 适配器', '读取失败：' + (e.name || 'Error'), 'GPU.requestAdapter()');
     return;
   }
-  if (!adapter) return;
+  if (!adapter) {
+    add('graphics', 'WebGPU 适配器', '不支持（无可用适配器）', 'GPU.requestAdapter()');
+    return;
+  }
 
   let info = adapter.info;
   if (!info && typeof adapter.requestAdapterInfo === 'function') {
@@ -1781,7 +1881,10 @@ async function collectHashes() {
 
 async function collectAudio() {
   const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return;
+  if (!AC) {
+    add('audio', 'AudioContext', '不支持（AudioContext 不存在）', 'window.AudioContext');
+    return;
+  }
   let ac = null;
   try {
     ac = new AC();
@@ -1793,7 +1896,7 @@ async function collectAudio() {
       add('audio', 'destination.maxChannelCount', ac.destination.maxChannelCount, 'AudioDestinationNode.maxChannelCount');
     } catch (e) { /* 不展示 */ }
   } catch (e) {
-    /* 创建失败则不展示 */
+    add('audio', 'AudioContext', '读取失败：' + (e.name || 'Error'), 'new AudioContext()');
   } finally {
     if (ac && ac.state !== 'closed') ac.close().catch(() => {});
   }
@@ -1805,6 +1908,7 @@ async function collectMedia() {
       const c = navigator.mediaDevices.getSupportedConstraints();
       const keys = Object.keys(c).filter((k) => c[k]);
       if (keys.length) add('media', '支持的约束', keys, 'navigator.mediaDevices.getSupportedConstraints()');
+      else add('media', '支持的约束', '无（浏览器未返回可用约束）', 'navigator.mediaDevices.getSupportedConstraints()');
     }
     try {
       const ds = await navigator.mediaDevices.enumerateDevices();
@@ -1818,8 +1922,12 @@ async function collectMedia() {
           deviceId: d.deviceId ? d.deviceId.slice(0, 12) + '…' : undefined,
           groupId: d.groupId ? d.groupId.slice(0, 12) + '…' : undefined
         })), 'enumerateDevices()（未主动申请权限）');
+      } else {
+        add('media', '设备数量', '无（未检测到媒体设备）', 'navigator.mediaDevices.enumerateDevices()');
       }
     } catch (e) { /* 不可用时不展示 */ }
+  } else {
+    add('media', '媒体设备', '不支持（navigator.mediaDevices 不存在）', 'navigator.mediaDevices');
   }
 
   const videoEl = document.createElement('video');
@@ -1838,6 +1946,7 @@ async function collectMedia() {
     return r ? `${name}: ${r}` : null;
   }).filter(Boolean);
   if (videoOk.length) add('media', '视频编解码', videoOk, 'HTMLVideoElement.canPlayType');
+  else add('media', '视频编解码', '不支持（canPlayType 无可用格式）', 'HTMLVideoElement.canPlayType');
 
   const audioEl = document.createElement('audio');
   const audioCodecs = [
@@ -1855,16 +1964,23 @@ async function collectMedia() {
     return r ? `${name}: ${r}` : null;
   }).filter(Boolean);
   if (audioOk.length) add('media', '音频编解码', audioOk, 'HTMLAudioElement.canPlayType');
+  else add('media', '音频编解码', '不支持（canPlayType 无可用格式）', 'HTMLAudioElement.canPlayType');
 
   if (typeof MediaRecorder === 'function') {
     const types = ['video/webm', 'video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm;codecs=h264', 'video/mp4', 'video/mp4;codecs=avc1.42E01E', 'audio/webm', 'audio/webm;codecs=opus', 'audio/mp4', 'audio/mp4;codecs=mp4a.40.2'];
     const ok = types.filter((t) => MediaRecorder.isTypeSupported(t));
     if (ok.length) add('media', 'MediaRecorder 支持的类型', ok, 'MediaRecorder.isTypeSupported');
+    else add('media', 'MediaRecorder 支持的类型', '未能获取（无支持的容器）', 'MediaRecorder.isTypeSupported');
+  } else {
+    add('media', 'MediaRecorder 支持的类型', '不支持（MediaRecorder 不存在）', 'window.MediaRecorder');
   }
   if (typeof MediaSource === 'function') {
     const types = ['video/mp4', 'video/webm', 'video/mp4;codecs="avc1.42E01E"', 'video/webm;codecs="vp9"', 'audio/mp4;codecs="mp4a.40.2"'];
     const ok = types.filter((t) => MediaSource.isTypeSupported(t));
     if (ok.length) add('media', 'MediaSource 支持的类型', ok, 'MediaSource.isTypeSupported');
+    else add('media', 'MediaSource 支持的类型', '未能获取（无支持的容器）', 'MediaSource.isTypeSupported');
+  } else {
+    add('media', 'MediaSource 支持的类型', '不支持（MediaSource 不存在）', 'window.MediaSource');
   }
 }
 
@@ -1939,16 +2055,23 @@ async function collectStorage() {
       add('storage', '已使用 usage', `${formatBytes(est.usage)}（${est.usage} 字节）`, 'navigator.storage.estimate().usage');
       if (est.usageDetails) add('storage', 'usageDetails', est.usageDetails, 'navigator.storage.estimate().usageDetails');
     } catch (e) { /* 不可用时不展示 */ }
+  } else {
+    add('storage', '存储配额 quota', '不支持（storage.estimate 不存在）', 'navigator.storage.estimate');
   }
   if (navigator.storage && navigator.storage.persisted) {
     try {
       add('storage', '存储已持久化', await navigator.storage.persisted(), 'navigator.storage.persisted()');
     } catch (e) { /* 不可用时不展示 */ }
+  } else {
+    add('storage', '存储已持久化', '不支持（persisted 不存在）', 'navigator.storage.persisted');
   }
 }
 
 async function collectPermissions() {
-  if (!navigator.permissions) return;
+  if (!navigator.permissions) {
+    add('permissions', 'Permissions API', '不支持（navigator.permissions 不存在）', 'navigator.permissions');
+    return;
+  }
   const names = [
     'geolocation', 'notifications', 'camera', 'microphone', 'clipboard-read', 'clipboard-write',
     'midi', 'background-sync', 'persistent-storage', 'accelerometer', 'gyroscope', 'magnetometer',
@@ -1960,26 +2083,23 @@ async function collectPermissions() {
       const st = await navigator.permissions.query({ name });
       return { name, state: st.state };
     } catch (e) {
-      return null;
+      return { name, state: '不支持（浏览器未提供该权限）' };
     }
   }));
   for (const r of results) {
-    if (r && (r.state === 'granted' || r.state === 'denied' || r.state === 'prompt')) {
-      add('permissions', r.name, r.state, `navigator.permissions.query({name:"${r.name}"})`);
-    }
+    add('permissions', r.name, r.state, `navigator.permissions.query({name:"${r.name}"})`);
   }
 }
 
 async function collectNetwork() {
-  const c = navigator.connection;
-  if (c) {
-    if (c.type) add('network', 'connection.type', c.type, 'navigator.connection.type');
-    if (c.effectiveType) add('network', 'effectiveType', c.effectiveType, 'navigator.connection.effectiveType');
-    if (c.rtt !== undefined) add('network', 'rtt (ms)', c.rtt, 'navigator.connection.rtt');
-    if (c.downlink !== undefined) add('network', 'downlink (Mbps)', c.downlink, 'navigator.connection.downlink');
-    if (c.saveData !== undefined) add('network', 'saveData', c.saveData, 'navigator.connection.saveData');
-  }
-  add('network', 'navigator.onLine', navigator.onLine, 'navigator.onLine');
+  const c = navigator.connection || {};
+  const conn = () => navigator.connection || {};
+  if ('type' in c) liveRow('network', 'net-type', 'connection.type', 'navigator.connection.type', () => conn().type);
+  if ('effectiveType' in c) liveRow('network', 'net-effective', 'effectiveType', 'navigator.connection.effectiveType', () => conn().effectiveType);
+  if ('rtt' in c) liveRow('network', 'net-rtt', 'rtt (ms)', 'navigator.connection.rtt', () => conn().rtt);
+  if ('downlink' in c) liveRow('network', 'net-downlink', 'downlink (Mbps)', 'navigator.connection.downlink', () => conn().downlink);
+  if ('saveData' in c) liveRow('network', 'net-savedata', 'saveData', 'navigator.connection.saveData', () => conn().saveData);
+  liveRow('network', 'net-online', 'navigator.onLine', 'navigator.onLine', () => navigator.onLine);
   const nav = performance.getEntriesByType('navigation')[0];
   if (nav && nav.nextHopProtocol) {
     add('network', 'HTTP 协议版本', nav.nextHopProtocol, 'PerformanceNavigationTiming.nextHopProtocol');
@@ -1998,72 +2118,119 @@ async function fetchJSON(url, ms) {
   }
 }
 
-async function collectPublicIP() {
-  const geoPromise = (async () => {
-    try {
-      const g = await fetchJSON('https://ipwho.is/', 3500);
-      if (g && g.success !== false && g.ip) {
-        return {
-          source: 'ipwho.is',
-          data: {
-            ip: g.ip,
-            type: g.type || undefined,
-            country: g.country || undefined,
-            country_code: g.country_code || undefined,
-            region: g.region || undefined,
-            city: g.city || undefined,
-            postal: g.postal || undefined,
-            latitude: g.latitude,
-            longitude: g.longitude,
-            timezone: g.timezone ? g.timezone.id : undefined,
-            asn: g.connection ? g.connection.asn : undefined,
-            org: g.connection ? g.connection.org : undefined,
-            isp: g.connection ? g.connection.isp : undefined
-          }
-        };
-      }
-    } catch (e) { /* 尝试回退接口 */ }
-    try {
-      const g = await fetchJSON('https://ipinfo.io/json', 3500);
-      if (g && g.ip) {
-        return {
-          source: 'ipinfo.io',
-          data: {
-            ip: g.ip,
-            city: g.city || undefined,
-            region: g.region || undefined,
-            country: g.country || undefined,
-            postal: g.postal || undefined,
-            loc: g.loc || undefined,
-            org: g.org || undefined,
-            timezone: g.timezone || undefined
-          }
-        };
-      }
-    } catch (e) { /* 两个接口均失败 */ }
-    return null;
-  })();
+const isIPv4 = (ip) => /^\d{1,3}(\.\d{1,3}){3}$/.test(ip);
 
-  const [v4, v6, geo] = await Promise.allSettled([
-    fetchJSON('https://api.ipify.org?format=json'),
-    fetchJSON('https://api64.ipify.org?format=json'),
-    geoPromise
+async function fetchGeo() {
+  try {
+    const g = await fetchJSON('https://ipwho.is/', 4000);
+    if (g && g.success !== false && g.ip) {
+      return {
+        source: 'ipwho.is',
+        data: {
+          ip: g.ip,
+          type: g.type || undefined,
+          country: g.country || undefined,
+          country_code: g.country_code || undefined,
+          region: g.region || undefined,
+          city: g.city || undefined,
+          postal: g.postal || undefined,
+          latitude: g.latitude,
+          longitude: g.longitude,
+          timezone: g.timezone ? g.timezone.id : undefined,
+          asn: g.connection ? g.connection.asn : undefined,
+          org: g.connection ? g.connection.org : undefined,
+          isp: g.connection ? g.connection.isp : undefined
+        }
+      };
+    }
+  } catch (e) { /* 回退 ipinfo.io */ }
+  try {
+    const g = await fetchJSON('https://ipinfo.io/json', 4000);
+    if (g && g.ip) {
+      return {
+        source: 'ipinfo.io',
+        data: {
+          ip: g.ip,
+          city: g.city || undefined,
+          region: g.region || undefined,
+          country: g.country || undefined,
+          postal: g.postal || undefined,
+          loc: g.loc || undefined,
+          org: g.org || undefined,
+          timezone: g.timezone || undefined
+        }
+      };
+    }
+  } catch (e) { /* 两个接口均失败 */ }
+  return null;
+}
+
+let lanPromise = null;
+function gatherLocalIPs() {
+  if (lanPromise) return lanPromise;
+  lanPromise = new Promise((resolve) => {
+    if (typeof RTCPeerConnection !== 'function') { resolve([]); return; }
+    let pc = null;
+    const found = new Set();
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      try { if (pc) pc.close(); } catch (e) { /* 已关闭 */ }
+      resolve(Array.from(found));
+    };
+    try {
+      pc = new RTCPeerConnection({ iceServers: [] });
+    } catch (e) {
+      resolve([]);
+      return;
+    }
+    pc.onicecandidate = (e) => {
+      if (!e.candidate) { finish(); return; }
+      const addr = String(e.candidate.candidate).split(' ')[4];
+      if (!addr || addr === '0.0.0.0' || addr === '::') return;
+      const isPrivate = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(addr)
+        || /^(fe80:|f[cd][0-9a-f]{2}:)/i.test(addr)
+        || /\.local$/i.test(addr);
+      if (isPrivate) found.add(addr);
+    };
+    try {
+      pc.createDataChannel('lan');
+      pc.createOffer().then((o) => pc.setLocalDescription(o)).catch(() => {});
+    } catch (e) { /* 协商失败则仅返回已收集地址 */ }
+    setTimeout(finish, 1800);
+  });
+  return lanPromise;
+}
+
+async function refreshPublicIP() {
+  const [v4r, v6r, v64r, geoR, lanR] = await Promise.allSettled([
+    fetchJSON('https://api.ipify.org?format=json', 5000),
+    fetchJSON('https://api6.ipify.org?format=json', 5000),
+    fetchJSON('https://api64.ipify.org?format=json', 5000),
+    fetchGeo(),
+    gatherLocalIPs()
   ]);
-  const isIPv4 = (ip) => /^\d{1,3}(\.\d{1,3}){3}$/.test(ip);
-  const v4ip = (v4.status === 'fulfilled' && v4.value && v4.value.ip) ? v4.value.ip : null;
-  const v6ip = (v6.status === 'fulfilled' && v6.value && v6.value.ip) ? v6.value.ip : null;
+  const ipOf = (r) => (r.status === 'fulfilled' && r.value && r.value.ip) ? r.value.ip : null;
+  const from64 = ipOf(v64r);
+  const v4 = ipOf(v4r) || (from64 && isIPv4(from64) ? from64 : null);
+  const v6 = ipOf(v6r) || (from64 && !isIPv4(from64) ? from64 : null);
+  const lan = lanR.status === 'fulfilled' ? lanR.value : [];
 
-  if (v4ip) {
-    add('network', '公网 IPv4', v4ip, 'api.ipify.org');
-  } else if (v6ip && isIPv4(v6ip)) {
-    add('network', '公网 IPv4', v6ip + '（经 api64 回退获取）', 'api64.ipify.org');
+  IPSTATE.v4 = v4 || '未能获取（api.ipify.org 与 api64.ipify.org 均无响应）';
+  IPSTATE.v6 = v6 || '未能获取（当前网络无 IPv6 出口）';
+  IPSTATE.lan = lan.length ? lan : '未能获取（浏览器隐藏内网地址或改用 mDNS）';
+  IPSTATE.geo = (geoR.status === 'fulfilled' && geoR.value) ? geoR.value.data : '未能获取（ipwho.is 与 ipinfo.io 均无响应）';
+
+  if (!ipRowsAdded) {
+    ipRowsAdded = true;
+    liveRow('network', 'net-ipv4', '公网 IPv4', 'api.ipify.org / api64.ipify.org', () => IPSTATE.v4);
+    liveRow('network', 'net-ipv6', '公网 IPv6', 'api6.ipify.org / api64.ipify.org', () => IPSTATE.v6);
+    liveRow('network', 'net-lan', '本机网络 IP', 'WebRTC 本地候选（无 STUN）', () => IPSTATE.lan);
+    liveRow('network', 'net-geo', '出口归属地 / 运营商', 'ipwho.is / ipinfo.io', () => IPSTATE.geo);
   }
-  if (v6ip && !isIPv4(v6ip)) {
-    add('network', '公网 IPv6', v6ip, 'api64.ipify.org');
-  }
-  if (geo.status === 'fulfilled' && geo.value) {
-    add('network', '出口归属地 / 运营商', geo.value.data, geo.value.source);
-  }
+  refreshLiveDom();
+  scheduleRender();
 }
 
 function parseCandidate(c) {
@@ -2072,11 +2239,15 @@ function parseCandidate(c) {
 }
 
 async function collectWebRTC() {
-  if (typeof window.RTCPeerConnection !== 'function') return;
+  if (typeof window.RTCPeerConnection !== 'function') {
+    add('webrtc', 'ICE 候选地址', '不支持（RTCPeerConnection 不存在）', 'RTCPeerConnection');
+    return;
+  }
   let pc = null;
   try {
     pc = new RTCPeerConnection({ iceServers: [] });
   } catch (e) {
+    add('webrtc', 'ICE 候选地址', '读取失败：' + (e.name || 'Error'), 'RTCPeerConnection');
     return;
   }
   const candidates = new Set();
@@ -2091,7 +2262,10 @@ async function collectWebRTC() {
   await sleep(1800);
   const raw = Array.from(candidates);
   try { pc.close(); } catch (e) { /* 已关闭 */ }
-  if (!raw.length) return;
+  if (!raw.length) {
+    add('webrtc', 'ICE 候选地址', '未能收集到候选（1.8 秒窗口内无地址返回）', 'RTCPeerConnection');
+    return;
+  }
   add('webrtc', 'ICE 候选地址', raw.map(parseCandidate), 'RTCPeerConnection（未配置 STUN/TURN，1.8 秒窗口）');
 }
 
@@ -2103,6 +2277,7 @@ function collectPlugins() {
     mimeTypes: Array.from(p).map((m) => m.type)
   }));
   if (plugins.length) add('plugins', '插件', plugins, 'navigator.plugins');
+  else add('plugins', '插件', '无（浏览器未返回插件）', 'navigator.plugins');
 
   const mimes = Array.from(navigator.mimeTypes || []).map((m) => ({
     type: m.type,
@@ -2111,9 +2286,12 @@ function collectPlugins() {
     enabledPlugin: m.enabledPlugin ? m.enabledPlugin.name : undefined
   }));
   if (mimes.length) add('plugins', 'MIME 类型', mimes, 'navigator.mimeTypes');
+  else add('plugins', 'MIME 类型', '无（浏览器未返回 MIME 类型）', 'navigator.mimeTypes');
 
   if (navigator.pdfViewerEnabled === true) {
     add('plugins', '内置 PDF 查看器', true, 'navigator.pdfViewerEnabled');
+  } else {
+    add('plugins', '内置 PDF 查看器', navigator.pdfViewerEnabled === false ? '不支持（已关闭）' : '不支持（接口不存在）', 'navigator.pdfViewerEnabled');
   }
 }
 
@@ -2131,10 +2309,10 @@ function collectPage() {
   add('page', '字符集', document.characterSet, 'document.characterSet');
   add('page', 'contentType', document.contentType, 'document.contentType');
   add('page', '兼容模式', document.compatMode, 'document.compatMode');
-  add('page', 'readyState', document.readyState, 'document.readyState');
-  add('page', 'visibilityState', document.visibilityState, 'document.visibilityState');
-  add('page', 'document.hidden', document.hidden, 'document.hidden');
-  add('page', 'document.hasFocus()', document.hasFocus(), 'document.hasFocus()');
+  liveRow('page', 'pg-ready', 'readyState', 'document.readyState', () => document.readyState);
+  liveRow('page', 'pg-visibility', 'visibilityState', 'document.visibilityState', () => document.visibilityState);
+  liveRow('page', 'pg-hidden', 'document.hidden', 'document.hidden', () => document.hidden);
+  liveRow('page', 'pg-focus', 'document.hasFocus()', 'document.hasFocus()', () => document.hasFocus());
   add('page', 'lastModified', document.lastModified, 'document.lastModified');
   add('page', 'isSecureContext', typeof window.isSecureContext === 'boolean' ? window.isSecureContext : '不可用', 'window.isSecureContext');
   add('page', 'crossOriginIsolated', typeof window.crossOriginIsolated === 'boolean' ? window.crossOriginIsolated : '不可用', 'window.crossOriginIsolated');
@@ -2162,15 +2340,16 @@ function collectPage() {
   }
 
   add('page', 'performance.timeOrigin', performance.timeOrigin, 'performance.timeOrigin');
-  add('page', '资源请求条目数', performance.getEntriesByType('resource').length, 'performance.getEntriesByType("resource")');
+  liveRow('page', 'pg-res', '资源请求条目数', 'performance.getEntriesByType("resource")', () => performance.getEntriesByType('resource').length);
 
-  if (performance.memory) {
-    add('page', '页面 JS 堆用量', {
+  liveRow('page', 'pg-heap', '页面 JS 堆用量', 'performance.memory（非标准，Chromium 提供）', () => {
+    if (!performance.memory) return null;
+    return {
       jsHeapSizeLimit: performance.memory.jsHeapSizeLimit,
       totalJSHeapSize: performance.memory.totalJSHeapSize,
       usedJSHeapSize: performance.memory.usedJSHeapSize
-    }, 'performance.memory（非标准，Chromium 提供）');
-  }
+    };
+  });
 }
 
 async function collectPrivacy() {
@@ -2404,7 +2583,10 @@ async function computeSummaries() {
 
 async function collectVoices() {
   const ss = window.speechSynthesis;
-  if (!ss) return;
+  if (!ss) {
+    add('audio', '语音合成 voices', '不支持（speechSynthesis 不存在）', 'window.speechSynthesis');
+    return;
+  }
   const voices = await new Promise((resolve) => {
     let done = false;
     const finish = (v) => { if (done) return; done = true; resolve(v); };
@@ -2419,7 +2601,10 @@ async function collectVoices() {
       read();
     }
   });
-  if (!voices.length) return;
+  if (!voices.length) {
+    add('audio', '语音合成 voices', '未能获取（浏览器未返回音色列表）', 'speechSynthesis.getVoices()');
+    return;
+  }
   add('audio', '语音合成 voices', voices.map((v) => `${v.name} (${v.lang})${v.localService ? ' · 本地' : ' · 网络'}`), 'speechSynthesis.getVoices()');
 }
 
@@ -2467,7 +2652,7 @@ async function phaseB() {
     run('存储', collectStorage),
     run('媒体', collectMedia),
     run('网络', collectNetwork),
-    run('公网 IP', collectPublicIP),
+    run('公网 IP', refreshPublicIP),
     run('WebRTC', collectWebRTC),
     run('语音', collectVoices),
     run('隐私', collectPrivacy)
@@ -2510,6 +2695,7 @@ async function boot() {
 
   UI.status = 'loading';
   render();
+  startLiveRefresh();
   startFresh().catch((e) => console.warn('[startFresh]', e));
 }
 
