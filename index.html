@@ -74,6 +74,7 @@ button.copy:hover{color:var(--accent);border-color:#c7d7f2;background:#f7faff}
 .hero{border:1px solid var(--line);border-radius:14px;padding:24px 26px;background:var(--panel);margin-bottom:14px}
 .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,440px);gap:30px;align-items:start}
 h1{font-size:clamp(21px,2.4vw,28px);margin:6px 0 8px;line-height:1.25;letter-spacing:-.01em;font-weight:650}
+.hero-grid>div:first-child>.hero-meta{margin-top:2px}
 .hero-meta{display:flex;flex-wrap:wrap;gap:7px;font-size:11px;color:var(--dim);align-items:center}
 .hero-meta span{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);max-width:100%;word-break:break-word}
 .live-pill{color:#3f8060!important;border-color:#d9ebdf!important;background:#f4faf6!important}
@@ -950,7 +951,6 @@ function renderHero() {
   $('#hero').innerHTML = `
     <div class="hero-grid">
       <div>
-        <h1>浏览器指纹与真实参数</h1>
         <div class="hero-meta">
           <span>${esc(gen)}</span>
           ${liveNote}
