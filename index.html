@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="color-scheme" content="light">
 <title>浏览器参数</title>
 <style>
@@ -2367,40 +2370,15 @@ function gatherLocalIPs() {
   return lanPromise;
 }
 
-const REV_CACHE_KEY = 'fp:rev:v2';
-const REV_TTL = 30 * 24 * 3600 * 1000;
-
-function readRevCache() {
-  try {
-    return JSON.parse(localStorage.getItem(REV_CACHE_KEY) || '{}') || {};
-  } catch (e) {
-    return {};
-  }
-}
-
-function writeRevCache(cache) {
-  try {
-    localStorage.setItem(REV_CACHE_KEY, JSON.stringify(cache));
-  } catch (e) { /* 配额满时忽略缓存 */ }
-}
-
 async function reverseGeo(lat, lon) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-  const key = lat.toFixed(4) + ',' + lon.toFixed(4);
-  const cache = readRevCache();
-  const hit = cache[key];
-  if (hit && Date.now() - hit.t < REV_TTL) {
-    return { district: hit.d || null, street: hit.s || null, cached: true };
-  }
   const [pr, br] = await Promise.allSettled([
     fetchJSON('https://photon.komoot.io/reverse?lat=' + lat + '&lon=' + lon + '&lang=default', 3000),
     fetchJSON('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=zh-Hans', 3000)
   ]);
   const props = (pr.status === 'fulfilled' && pr.value && pr.value.features && pr.value.features[0] && pr.value.features[0].properties) || null;
   const bdc = (br.status === 'fulfilled' && br.value) ? br.value : null;
-  if (!props && !bdc) {
-    return hit ? { district: hit.d || null, street: hit.s || null, cached: true } : null;
-  }
+  if (!props && !bdc) return null;
   const pick = (arr, re) => arr.find((v) => typeof v === 'string' && re.test(v)) || null;
   const district = props
     ? pick([props.district, props.city, props.county, props.state], /(区|县|旗)$/)
@@ -2411,11 +2389,7 @@ async function reverseGeo(lat, lon) {
   const street = props
     ? pick([props.district, props.locality, props.street], /(街道|镇|乡)$/)
     : null;
-  cache[key] = { t: Date.now(), d: districtFinal, s: street };
-  const keys = Object.keys(cache);
-  if (keys.length > 400) keys.slice(0, keys.length - 400).forEach((k) => delete cache[k]);
-  writeRevCache(cache);
-  return { district: districtFinal, street, cached: false };
+  return { district: districtFinal, street };
 }
 
 async function refreshPublicIP() {
@@ -2944,6 +2918,7 @@ async function boot() {
   try {
     Object.keys(localStorage).filter((k) => k.indexOf('bfp:report:') === 0).forEach((k) => localStorage.removeItem(k));
     localStorage.removeItem('fp:rev:v1');
+    localStorage.removeItem('fp:rev:v2');
   } catch (e) { /* 清理旧版本缓存失败时忽略 */ }
 
   UI.status = 'loading';
