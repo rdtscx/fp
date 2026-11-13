@@ -117,6 +117,8 @@ button.ip-refresh.busy svg{animation:spin 1.1s linear infinite}
 .ip-map svg text{font-family:var(--mono);font-size:6.5px;fill:#9aa3af}
 .ip-map .map-country{fill:#e3ebf4;stroke:#c2cfdf;stroke-width:.4;stroke-linejoin:round}
 .ip-map .map-country.on{fill:#cdddf1}
+.ip-map .map-city{fill:#e3ebf4;stroke:#c9d5e3;stroke-width:.5;stroke-linejoin:round}
+.ip-map .map-city:hover{fill:#dbe7f5}
 .ip-map .map-name{font-family:inherit;font-size:8.5px;fill:#5f6f83;paint-order:stroke;stroke:#f4f8fd;stroke-width:1.6px;stroke-linejoin:round;pointer-events:none}
 .ip-map-empty{height:132px;display:grid;place-items:center;font-size:11px;color:var(--dim);background:var(--panel2);border:1px dashed var(--line);border-radius:6px;text-align:center;padding:0 10px}
 .ip-map-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:5px;font-size:10px;color:var(--dim);flex-wrap:wrap}
@@ -3027,20 +3029,296 @@ function userLocNote(u) {
   return text ? `<div class="ip-map-loc"><i class="off"></i>${esc(text)}</div>` : '';
 }
 
+const PROVINCE_ADCODE = {
+  北京: '110000', 天津: '120000', 河北: '130000', 山西: '140000', 内蒙古: '150000',
+  辽宁: '210000', 吉林: '220000', 黑龙江: '230000', 上海: '310000', 江苏: '320000',
+  浙江: '330000', 安徽: '340000', 福建: '350000', 江西: '360000', 山东: '370000',
+  河南: '410000', 湖北: '420000', 湖南: '430000', 广东: '440000', 广西: '450000',
+  海南: '460000', 重庆: '500000', 四川: '510000', 贵州: '520000', 云南: '530000',
+  西藏: '540000', 陕西: '610000', 甘肃: '620000', 青海: '630000', 宁夏: '640000',
+  新疆: '650000', 台湾: '710000', 香港: '810000', 澳门: '820000'
+};
+
+const PROVINCE_CAPITAL = {
+  北京: '北京', 天津: '天津', 河北: '石家庄', 山西: '太原', 内蒙古: '呼和浩特',
+  辽宁: '沈阳', 吉林: '长春', 黑龙江: '哈尔滨', 上海: '上海', 江苏: '南京',
+  浙江: '杭州', 安徽: '合肥', 福建: '福州', 江西: '南昌', 山东: '济南',
+  河南: '郑州', 湖北: '武汉', 湖南: '长沙', 广东: '广州', 广西: '南宁',
+  海南: '海口', 重庆: '重庆', 四川: '成都', 贵州: '贵阳', 云南: '昆明',
+  西藏: '拉萨', 陕西: '西安', 甘肃: '兰州', 青海: '西宁', 宁夏: '银川',
+  新疆: '乌鲁木齐', 台湾: '台北', 香港: '香港', 澳门: '澳门'
+};
+
+const PROV_CACHE = new Map();
+
+function provinceFromGeo(geo) {
+  if (!geo || String(geo.country_code || '').toUpperCase() !== 'CN') return null;
+  const region = String(geo.region || '') + ' ' + String(geo.city || '');
+  let name = null;
+  const hit = CN_PROVINCES.find(([en]) => new RegExp('\\b' + en + '\\b', 'i').test(region));
+  if (hit) name = hit[1];
+  if (!name) name = Object.keys(PROVINCE_ADCODE).find((n) => region.includes(n)) || null;
+  const adcode = name ? PROVINCE_ADCODE[name] : null;
+  return adcode ? { name, adcode } : null;
+}
+
+function simplifyLatLon(ring, tol) {
+  if (ring.length < 5) return ring;
+  const keep = new Uint8Array(ring.length);
+  keep[0] = 1;
+  keep[ring.length - 1] = 1;
+  const stack = [[0, ring.length - 1]];
+  while (stack.length) {
+    const [a, b] = stack.pop();
+    if (b - a < 2) continue;
+    const ax = ring[a][0];
+    const ay = ring[a][1];
+    const bx = ring[b][0];
+    const by = ring[b][1];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len = Math.hypot(dx, dy);
+    let idx = -1;
+    let dmax = tol;
+    for (let i = a + 1; i < b; i++) {
+      const px = ring[i][0];
+      const py = ring[i][1];
+      const d = len
+        ? Math.abs(dy * px - dx * py + bx * ay - by * ax) / len
+        : Math.hypot(px - ax, py - ay);
+      if (d > dmax) { dmax = d; idx = i; }
+    }
+    if (idx > 0) {
+      keep[idx] = 1;
+      stack.push([a, idx], [idx, b]);
+    }
+  }
+  const out = [];
+  for (let i = 0; i < ring.length; i++) if (keep[i]) out.push(ring[i]);
+  return out;
+}
+
+function ringAreaLatLon(ring) {
+  let s = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i];
+    const b = ring[(i + 1) % ring.length];
+    s += a[0] * b[1] - b[0] * a[1];
+  }
+  return s / 2;
+}
+
+function provinceState(prov) {
+  const cached = PROV_CACHE.get(prov.adcode);
+  if (cached) return cached;
+  const st = { status: 'loading', name: prov.name, adcode: prov.adcode };
+  PROV_CACHE.set(prov.adcode, st);
+  fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/' + prov.adcode + '_full.json', 8000)
+    .then((data) => {
+      buildProvince(st, data);
+      st.status = 'ready';
+      scheduleRender();
+    })
+    .catch(() => {
+      st.status = 'error';
+      scheduleRender();
+    });
+  return st;
+}
+
+function buildProvince(st, geoData) {
+  const feats = (geoData && geoData.features) || [];
+  const cities = [];
+  let lonMin = Infinity;
+  let lonMax = -Infinity;
+  let latMin = Infinity;
+  let latMax = -Infinity;
+  feats.forEach((f) => {
+    const g = f.geometry;
+    if (!g) return;
+    const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
+    const rings = [];
+    let area = 0;
+    polys.forEach((poly) => {
+      const outer = poly && poly[0];
+      if (!outer || outer.length < 4) return;
+      const ring = simplifyLatLon(outer, 0.006);
+      if (ring.length < 4) return;
+      rings.push(ring);
+      area += Math.abs(ringAreaLatLon(ring));
+      ring.forEach(([lon, lat]) => {
+        if (lon < lonMin) lonMin = lon;
+        if (lon > lonMax) lonMax = lon;
+        if (lat < latMin) latMin = lat;
+        if (lat > latMax) latMax = lat;
+      });
+    });
+    if (!rings.length) return;
+    const props = f.properties || {};
+    const c = props.centroid || props.center;
+    cities.push({ name: String(props.name || ''), rings, area, at: c ? [c[0], c[1]] : rings[0][0] });
+  });
+  if (!cities.length) throw new Error('no cities');
+
+  const kLon = Math.cos(((latMin + latMax) / 2) * Math.PI / 180);
+  const rawW = Math.max(0.5, (lonMax - lonMin) * kLon);
+  const rawH = Math.max(0.5, latMax - latMin);
+  const pad = 16;
+  const scale = Math.min((620 - pad * 2) / rawW, (420 - pad * 2) / rawH);
+  const W = Math.round(rawW * scale + pad * 2);
+  const H = Math.round(rawH * scale + pad * 2);
+  const project = (lon, lat) => [pad + (lon - lonMin) * kLon * scale, pad + (latMax - lat) * scale];
+
+  cities.forEach((c) => {
+    c.d = c.rings.map((ring) => 'M' + ring.map(([lon, lat]) => {
+      const p = project(lon, lat);
+      return p[0].toFixed(1) + ' ' + p[1].toFixed(1);
+    }).join('L') + 'Z').join('');
+  });
+
+  const span = Math.max(lonMax - lonMin, latMax - latMin);
+  const step = span > 12 ? 2 : span > 6 ? 1 : 0.5;
+  const grid = [];
+  const gridLabels = [];
+  for (let lon = Math.ceil(lonMin / step) * step; lon <= lonMax + 0.001; lon += step) {
+    const x = project(lon, latMax)[0];
+    grid.push(`<line x1="${x}" y1="${pad}" x2="${x}" y2="${H - pad}" stroke="#e9eef6" stroke-width=".5"/>`);
+    gridLabels.push(`<text x="${x}" y="${H - 4}" text-anchor="middle">${fmtLon(lon)}</text>`);
+  }
+  for (let lat = Math.ceil(latMin / step) * step; lat <= latMax + 0.001; lat += step) {
+    const y = project(lonMin, lat)[1];
+    grid.push(`<line x1="${pad}" y1="${y}" x2="${W - pad}" y2="${y}" stroke="#e9eef6" stroke-width=".5"/>`);
+    gridLabels.push(`<text x="2" y="${y + 2}">${fmtLat(lat)}</text>`);
+  }
+
+  cities.sort((a, b) => b.area - a.area);
+  const capital = PROVINCE_CAPITAL[st.name] || '';
+  const cap = cities.find((c) => c.name.replace(/(市|地区|自治州|盟)$/, '') === capital);
+  const order = cap ? [cap].concat(cities.filter((c) => c !== cap)) : cities.slice();
+
+  st.W = W;
+  st.H = H;
+  st.pad = pad;
+  st.project = project;
+  st.cities = cities;
+  st.order = order;
+  st.grid = grid.join('');
+  st.gridLabels = gridLabels.join('');
+}
+
+function pointInRingsLL(lon, lat, rings) {
+  for (const ring of rings) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0];
+      const yi = ring[i][1];
+      const xj = ring[j][0];
+      const yj = ring[j][1];
+      if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    if (inside) return true;
+  }
+  return false;
+}
+
+function provinceLabelHtml(st, limit, fs, focus) {
+  const boxes = [];
+  let html = '';
+  let placed = 0;
+  let focusCity = null;
+  if (focus) {
+    for (const c of st.order) {
+      if (pointInRingsLL(focus.lon, focus.lat, c.rings)) { focusCity = c; break; }
+    }
+  }
+  const order = focusCity ? [focusCity].concat(st.order.filter((c) => c !== focusCity)) : st.order;
+  for (const c of order) {
+    if (placed >= limit) break;
+    const [x, y] = st.project(c.at[0], c.at[1]);
+    const name = c.name.replace(/(市|地区|自治州|盟|区|县|旗)$/, '');
+    const w = [...name].reduce((n, ch) => n + glyphWidth(ch), 0) * fs;
+    const left = x - w / 2 - 1;
+    const right = x + w / 2 + 1;
+    const top = y - fs / 2 - 1;
+    const bottom = y + fs / 2 + 1;
+    if (left < 2 || right > st.W - 2 || top < 2 || bottom > st.H - 2) continue;
+    let hit = false;
+    for (const b of boxes) {
+      if (left < b[2] && right > b[0] && top < b[3] && bottom > b[1]) { hit = true; break; }
+    }
+    if (hit) continue;
+    boxes.push([left, top, right, bottom]);
+    html += `<text class="map-name" x="${x}" y="${(y + fs * 0.34).toFixed(1)}">${esc(name)}</text>`;
+    placed++;
+  }
+  return html;
+}
+
+function provinceSvg(st, focus, ip, user) {
+  const narrow = window.innerWidth <= 980;
+  const fs = narrow ? 10 : 9;
+  const limit = window.innerWidth <= 440 ? 8 : narrow ? 10 : 14;
+  const [x, y] = st.project(focus.lon, focus.lat);
+  const shapes = st.order.map((c) => `<path class="map-city" d="${c.d}"/>`).join('');
+  const labels = provinceLabelHtml(st, limit, fs, focus);
+  const ipMark = ip
+    ? (() => {
+      const p = st.project(ip.lon, ip.lat);
+      return `<circle cx="${p[0]}" cy="${p[1]}" r="4.6" fill="#3f6fd8" opacity=".14"/>
+        <circle cx="${p[0]}" cy="${p[1]}" r="1.9" fill="#3f6fd8" stroke="#fff" stroke-width=".9"/>`;
+    })()
+    : '';
+  const userMark = user
+    ? (() => {
+      const p = st.project(user.lon, user.lat);
+      return `<polygon points="${p[0]},${p[1] - 4.6} ${p[0] + 3.8},${p[1] + 3} ${p[0] - 3.8},${p[1] + 3}" fill="#4b8f6b" stroke="#fff" stroke-width=".9" stroke-linejoin="round"/>`;
+    })()
+    : '';
+  return `<svg viewBox="0 0 ${st.W} ${st.H}" role="img" aria-label="${esc(st.name)}地图，当前经纬度 ${fmtLat(focus.lat)} ${fmtLon(focus.lon)}">
+    <defs><clipPath id="prov-clip"><rect x="0" y="0" width="${st.W}" height="${st.H}"/></clipPath></defs>
+    <rect x="0" y="0" width="${st.W}" height="${st.H}" fill="#f4f8fd"/>
+    <g clip-path="url(#prov-clip)">
+      ${st.grid}
+      ${shapes}
+      ${labels}
+      ${st.gridLabels}
+    </g>
+    <line x1="${x}" y1="0" x2="${x}" y2="${st.H}" stroke="#3f6fd8" stroke-width=".8" stroke-dasharray="2.5 2.5" opacity=".6"/>
+    <line x1="0" y1="${y}" x2="${st.W}" y2="${y}" stroke="#3f6fd8" stroke-width=".8" stroke-dasharray="2.5 2.5" opacity=".6"/>
+    ${ipMark}
+    ${userMark}
+  </svg>`;
+}
+
 function ipMapHtml(geo) {
   const ip = (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lon))
     ? { lat: geo.lat, lon: geo.lon } : null;
   const user = hasUserLoc() ? { lat: USERLOC.lat, lon: USERLOC.lon, acc: USERLOC.acc } : null;
   const focus = ip || user;
   const loc = userLocNote(user);
-  const spot = focus ? locateLatLon(focus.lat, focus.lon) : null;
-  const where = spot
-    ? spot.name + (spot.near ? '（近海）' : '') + (spot.country ? ' · ' + spot.country : '')
-    : '查询中';
-  const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">${esc(where)}</span></div>`;
-  if (!focus) return `<div class="ip-map">${head}<div class="ip-map-empty">取得经纬度后自动绘制</div>${loc}</div>`;
+  if (!focus) {
+    return `<div class="ip-map"><div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">查询中</span></div><div class="ip-map-empty">取得经纬度后自动绘制</div>${loc}</div>`;
+  }
+  const coords = `${fmtLat(focus.lat)} ${fmtLon(focus.lon)}`;
   const key = `<span class="ip-map-key"><i></i>IP 归属地<i class="tri"></i>设备定位</span>`;
-  return `<div class="ip-map">${head}${ipMapSvg(spot, focus, ip, user)}<div class="ip-map-foot">${key}<code>${esc(fmtLat(focus.lat))} ${esc(fmtLon(focus.lon))}</code></div>${loc}</div>`;
+  const foot = `<div class="ip-map-foot">${key}<code>${esc(coords)}</code></div>`;
+
+  const prov = provinceFromGeo(geo);
+  if (prov) {
+    const st = provinceState(prov);
+    const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">中国 · ${esc(prov.name)}</span></div>`;
+    if (st.status === 'ready') {
+      return `<div class="ip-map">${head}${provinceSvg(st, focus, ip, user)}${foot}${loc}</div>`;
+    }
+    if (st.status === 'loading') {
+      return `<div class="ip-map">${head}<div class="ip-map-empty">正在加载${esc(prov.name)}地图…</div>${foot}${loc}</div>`;
+    }
+  }
+
+  const spot = locateLatLon(focus.lat, focus.lon);
+  const where = spot.name + (spot.near ? '（近海）' : '') + (spot.country ? ' · ' + spot.country : '');
+  const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">${esc(where)}</span></div>`;
+  return `<div class="ip-map">${head}${ipMapSvg(spot, focus, ip, user)}${foot}${loc}</div>`;
 }
 
 function parseCandidate(c) {
