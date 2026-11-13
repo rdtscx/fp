@@ -126,6 +126,9 @@ button.ip-refresh.busy svg{animation:spin 1.1s linear infinite}
 .ip-map-key i.tri:first-child,.ip-map-loc i{margin-left:0}
 .ip-map-loc{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:10px;color:var(--muted)}
 .ip-map-loc i.off{border-bottom-color:var(--na)}
+.ip-map-addr{align-items:flex-start;color:#33404f}
+.ip-map-addr b{flex:none;font-size:9.5px;letter-spacing:.06em;color:var(--dim);font-weight:600;line-height:1.9}
+.ip-map-addr span{line-height:1.6;word-break:break-word}
 .mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .mini .chip{font-family:var(--mono);font-size:10px}
 .skeleton{display:block;background:linear-gradient(90deg,#eef1f5,#f7f9fb,#eef1f5);background-size:200% 100%;animation:shimmer 1.4s linear infinite;border-radius:5px}
@@ -2619,7 +2622,7 @@ function continentAt(lat, lon) {
   return { name: '海洋', near: false };
 }
 
-const USERLOC = { state: 'idle', lat: null, lon: null, acc: null, err: null };
+const USERLOC = { state: 'idle', lat: null, lon: null, acc: null, err: null, addr: null, addrState: 'idle' };
 const hasUserLoc = () => USERLOC.state === 'done'
   && Number.isFinite(USERLOC.lat) && Number.isFinite(USERLOC.lon);
 
@@ -2638,6 +2641,7 @@ function requestUserLocation() {
       USERLOC.lon = pos.coords.longitude;
       USERLOC.acc = pos.coords.accuracy;
       scheduleRender();
+      resolveUserAddress();
     },
     (e) => {
       USERLOC.state = 'error';
@@ -2646,6 +2650,67 @@ function requestUserLocation() {
     },
     { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
   );
+}
+
+function regionZh(code, fallback) {
+  if (code) {
+    try {
+      const name = new Intl.DisplayNames(['zh-CN'], { type: 'region' }).of(String(code).toUpperCase());
+      if (name) return name;
+    } catch (e) { /* 旧浏览器无 DisplayNames */ }
+  }
+  return fallback || null;
+}
+
+async function resolveUserAddress() {
+  const lat = USERLOC.lat;
+  const lon = USERLOC.lon;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  USERLOC.addrState = 'pending';
+  scheduleRender();
+  const addr = await reverseAddress(lat, lon);
+  if (USERLOC.lat !== lat || USERLOC.lon !== lon) return;
+  USERLOC.addr = addr;
+  USERLOC.addrState = addr ? 'done' : 'error';
+  scheduleRender();
+}
+
+async function reverseAddress(lat, lon) {
+  const [pr, br] = await Promise.allSettled([
+    fetchJSON('https://photon.komoot.io/reverse?lat=' + lat + '&lon=' + lon + '&lang=default', 5000),
+    fetchJSON('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=zh-Hans', 5000)
+  ]);
+  const p = (pr.status === 'fulfilled' && pr.value && pr.value.features && pr.value.features[0])
+    ? pr.value.features[0].properties : null;
+  const b = (br.status === 'fulfilled' && br.value) ? br.value : null;
+  const parts = [];
+  const seen = new Set();
+  const push = (v) => {
+    const t = typeof v === 'string' ? v.trim() : '';
+    if (!t) return;
+    const core = t.replace(/(特别行政区|自治区|省|市|区|县|旗|州)$/u, '').toLowerCase();
+    if (!core || seen.has(core)) return;
+    seen.add(core);
+    parts.push(t);
+  };
+  if (p) {
+    push(regionZh(p.countrycode, p.country));
+    push(p.state);
+    push(p.county);
+    push(p.city);
+    push(p.district);
+    push(p.locality);
+    push([p.street, p.housenumber].filter(Boolean).join(' '));
+    push(p.postcode);
+  }
+  if (b && parts.length < 2) {
+    push(regionZh(b.countryCode, b.countryName));
+    push(b.principalSubdivision);
+    push(b.city);
+    push(b.locality);
+    push(b.postcode);
+  }
+  return parts.length ? parts.join(' · ') : null;
 }
 
 function ipMapSvg(focus, ip, user) {
@@ -2699,7 +2764,13 @@ function ipMapSvg(focus, ip, user) {
 function userLocNote(u) {
   if (u) {
     const acc = Number.isFinite(u.acc) ? ` ±${Math.round(u.acc)} m` : '';
-    return `<div class="ip-map-loc"><i></i>设备定位：${esc(fmtLat(u.lat))} ${esc(fmtLon(u.lon))}${esc(acc)}</div>`;
+    const addrText = USERLOC.addrState === 'pending' ? '解析中…'
+      : USERLOC.addr ? USERLOC.addr
+      : USERLOC.addrState === 'error' ? '未获取' : '';
+    const addrLine = addrText
+      ? `<div class="ip-map-loc ip-map-addr"><b>物理地址</b><span>${esc(addrText)}</span></div>`
+      : '';
+    return `<div class="ip-map-loc"><i></i>设备定位：${esc(fmtLat(u.lat))} ${esc(fmtLon(u.lon))}${esc(acc)}</div>${addrLine}`;
   }
   const text = USERLOC.state === 'pending' ? '设备定位：请求中…'
     : USERLOC.state === 'error' ? `设备定位：${USERLOC.err}` : '';
