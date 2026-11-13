@@ -822,6 +822,47 @@ const CN_CARRIERS = [
   [/china\s*broadnet|broadcast(ing)?\s*network|\bcbn\b/i, '广电']
 ];
 
+const CARRIER_EN = { 电信: 'China Telecom', 联通: 'China Unicom', 移动: 'China Mobile', 广电: 'China Broadnet' };
+
+// 中国运营商主要 ASN（BGP 归属优先于接口文案）
+const CN_ASN_CARRIERS = {
+  4134: '电信', 4809: '电信', 4811: '电信', 4812: '电信', 23724: '电信',
+  4847: '电信', 63835: '电信', 134756: '电信', 134774: '电信', 58543: '电信',
+  4837: '联通', 9929: '联通', 17816: '联通', 4808: '联通', 17621: '联通', 17623: '联通',
+  9808: '移动', 24400: '移动', 38019: '移动', 56040: '移动', 56041: '移动',
+  56042: '移动', 56044: '移动', 132525: '移动', 58453: '移动',
+  17429: '广电'
+};
+
+function carrierFromAsn(asn) {
+  const n = Number(String(asn === null || asn === undefined ? '' : asn).replace(/^AS/i, ''));
+  return Number.isFinite(n) ? (CN_ASN_CARRIERS[n] || null) : null;
+}
+
+function carrierFromText(text) {
+  const t = String(text || '');
+  if (!t) return null;
+  const hit = CN_CARRIERS.find(([re]) => re.test(t));
+  if (hit) return hit[1];
+  if (/chinanet|chinatelecom|china\s*telecom|\bctc\b/i.test(t)) return '电信';
+  if (/china\s*unicom|chinaunicom|\bcucc\b|\bcncgroup\b|\bchina169\b/i.test(t)) return '联通';
+  if (/chinamobile|china\s*mobile|\bcmcc\b|\bcmnet\b/i.test(t)) return '移动';
+  if (/broadnet|broadcast|radio\s*&?\s*tv|\bcbn\b|catv/i.test(t)) return '广电';
+  return null;
+}
+
+// 优先取与权威运营商一致的字段；都不一致时用规范英文名，避免展示错误的 ISP 文案
+function pickIsp(geo) {
+  const list = [geo.isp, geo.org].filter((s) => typeof s === 'string' && s.trim());
+  const branded = list.filter((s) => carrierFromText(s));
+  if (geo.carrier) {
+    const exact = branded.find((s) => carrierFromText(s) === geo.carrier.zh);
+    if (exact) return exact;
+    if (geo.carrier.en) return geo.carrier.en;
+  }
+  return branded[0] || geo.org || geo.isp || null;
+}
+
 const FOREIGN_ISPS = [
   [/amazon|\baws\b/i, '亚马逊'],
   [/google/i, '谷歌'],
@@ -867,21 +908,18 @@ const FOREIGN_ISPS = [
   [/telus/i, '泰卢斯']
 ];
 
-function ispZhName(raw, countryCode, countryName) {
+function ispZhName(raw, geo, countryName) {
+  const g = geo || {};
+  const cc = String(g.country_code || '').toUpperCase();
   const text = String(raw || '');
-  if (!text) return null;
-  if (/[\u4e00-\u9fa5]/.test(text)) return text;
-  const cc = (countryCode || '').toUpperCase();
-  let carrier = CN_CARRIERS.find(([re]) => re.test(text));
-  carrier = carrier ? carrier[1] : null;
-  if (!carrier && cc === 'CN') {
-    if (/telecom|chinanet|\bctc\b/i.test(text)) carrier = '电信';
-    else if (/unicom/i.test(text)) carrier = '联通';
-    else if (/mobile|\bcmcc\b/i.test(text)) carrier = '移动';
-    else if (/broadcast|radio\s*&?\s*tv|\bcbn\b/i.test(text)) carrier = '广电';
-  }
+  const carrierInfo = g.carrier || null;
+  if (!carrierInfo && !text) return null;
+  if (!carrierInfo && /[\u4e00-\u9fa5]/.test(text)) return text;
+  let carrier = carrierInfo ? carrierInfo.zh : carrierFromText(text);
+  if (!carrier && cc === 'CN') carrier = carrierFromText(g.org) || carrierFromText(g.isp);
   if (carrier) {
-    const prov = CN_PROVINCES.find(([en]) => new RegExp('\\b' + en + '\\b', 'i').test(text));
+    const where = text + ' ' + (g.region || '') + ' ' + (carrierInfo && carrierInfo.holder ? carrierInfo.holder : '');
+    const prov = CN_PROVINCES.find(([en]) => new RegExp('\\b' + en + '\\b', 'i').test(where));
     if (prov) return prov[1] + carrier;
     return '中国' + carrier + (cc === 'CN' ? '' : '（海外）');
   }
@@ -947,8 +985,8 @@ function renderHero() {
   const asnText = geo && geo.asn ? (/^AS/i.test(String(geo.asn)) ? String(geo.asn) : 'AS' + geo.asn) : null;
   const coord = (v) => (typeof v === 'number' && Number.isFinite(v)) ? v : v;
 
-  const ispEn = geo ? (geo.isp || geo.org) : null;
-  const ispCn = ispEn ? ispZhName(ispEn, geo.country_code, countryZh) : null;
+  const ispEn = geo ? pickIsp(geo) : null;
+  const ispCn = ispEn ? ispZhName(ispEn, geo, countryZh) : null;
   const ispCell = ispEn
     ? `<span>${esc(ispEn)}${ispCn
       ? (ispCn === ispEn ? '' : `<em class="ip-zh">${esc(ispCn)}</em>`)
@@ -2626,6 +2664,37 @@ async function fetchLan(gen) {
   publishIp();
 }
 
+// 中国区运营商以 BGP 归属为准：接口文案可能把电信 IP 写成移动
+function applyCarrier(geo) {
+  if (!geo || String(geo.country_code || '').toUpperCase() !== 'CN') return;
+  const carrier = carrierFromAsn(geo.asn) || carrierFromText(geo.org) || carrierFromText(geo.isp);
+  if (carrier) geo.carrier = { zh: carrier, en: CARRIER_EN[carrier] };
+}
+
+async function bgpLookup(ip) {
+  try {
+    const d = await fetchJSON('https://stat.ripe.net/data/prefix-overview/data.json?resource=' + encodeURIComponent(ip), 4000);
+    const first = d && d.data && d.data.asns && d.data.asns[0];
+    return first ? { asn: Number(first.asn), holder: String(first.holder || '') } : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function verifyCarrier(geo, gen) {
+  if (!geo || String(geo.country_code || '').toUpperCase() !== 'CN' || !geo.ip) return;
+  const bgp = await bgpLookup(geo.ip);
+  if (!bgp || gen !== ipGen || IPSTATE.geo !== geo) return;
+  const carrier = carrierFromAsn(bgp.asn) || carrierFromText(bgp.holder);
+  if (!carrier) return;
+  const asnText = 'AS' + bgp.asn;
+  const changed = !geo.carrier || geo.carrier.zh !== carrier || geo.asn !== asnText;
+  geo.carrier = { zh: carrier, en: CARRIER_EN[carrier], holder: bgp.holder };
+  geo.bgpAsn = bgp.asn;
+  geo.asn = asnText;
+  if (changed) publishIp();
+}
+
 let geoRaceCtrl = null;
 
 async function fetchGeoOnce(gen) {
@@ -2636,11 +2705,13 @@ async function fetchGeoOnce(gen) {
     ctrl.abort();
     if (!found || gen !== ipGen) return;
     IPSTATE.geo = found;
+    applyCarrier(found);
     if (found.ip && !hasPublicIp()) {
       if (isIPv4(found.ip)) IPSTATE.v4 = found.ip;
       else if (isIPv6(found.ip)) IPSTATE.v6 = found.ip;
     }
     publishIp();
+    verifyCarrier(found, gen).catch(() => {});
     if (!Number.isFinite(found.lat) || !Number.isFinite(found.lon)) return;
     const rev = await reverseGeo(found.lat, found.lon);
     if (gen !== ipGen || !rev || IPSTATE.geo !== found) return;
