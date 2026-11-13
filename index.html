@@ -2587,6 +2587,7 @@ function refreshPublicIP(opts) {
   if (opts && opts.manual) {
     ipGen++;
     if (geoRaceCtrl) geoRaceCtrl.abort();
+    resetProvinceMaps();
     IPSTATE.v4 = null;
     IPSTATE.v6 = null;
     IPSTATE.geo = null;
@@ -3051,8 +3052,20 @@ const PROVINCE_CAPITAL = {
 
 const PROV_CACHE = new Map();
 
+function isChinaGeo(geo) {
+  if (!geo) return false;
+  const cc = String(geo.country_code || '').toUpperCase();
+  if (cc === 'CN' || cc === 'CHN' || cc === 'HK' || cc === 'MO' || cc === 'TW') return true;
+  return /china|中国/i.test(String(geo.country || ''));
+}
+
 function provinceFromGeo(geo) {
-  if (!geo || String(geo.country_code || '').toUpperCase() !== 'CN') return null;
+  if (!geo) return null;
+  const cc = String(geo.country_code || '').toUpperCase();
+  if (cc === 'HK') return { name: '香港', adcode: '810000' };
+  if (cc === 'MO') return { name: '澳门', adcode: '820000' };
+  if (cc === 'TW') return { name: '台湾', adcode: '710000' };
+  if (!isChinaGeo(geo)) return null;
   const region = String(geo.region || '') + ' ' + String(geo.city || '');
   let name = null;
   const hit = CN_PROVINCES.find(([en]) => new RegExp('\\b' + en + '\\b', 'i').test(region));
@@ -3060,6 +3073,11 @@ function provinceFromGeo(geo) {
   if (!name) name = Object.keys(PROVINCE_ADCODE).find((n) => region.includes(n)) || null;
   const adcode = name ? PROVINCE_ADCODE[name] : null;
   return adcode ? { name, adcode } : null;
+}
+
+function resetProvinceMaps() {
+  PROV_ATLAS = { status: 'idle', data: null };
+  PROV_CACHE.clear();
 }
 
 function simplifyLatLon(ring, tol) {
@@ -3113,7 +3131,7 @@ function provinceState(prov) {
   if (cached) return cached;
   const st = { status: 'loading', name: prov.name, adcode: prov.adcode };
   PROV_CACHE.set(prov.adcode, st);
-  fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/' + prov.adcode + '_full.json', 8000)
+  fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/' + prov.adcode + '_full.json', 12000)
     .then((data) => {
       buildProvince(st, data);
       st.status = 'ready';
@@ -3298,7 +3316,7 @@ let PROV_ATLAS = { status: 'idle', data: null };
 function provinceAtlasState() {
   if (PROV_ATLAS.status !== 'idle') return PROV_ATLAS;
   PROV_ATLAS.status = 'loading';
-  fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json', 8000)
+  fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json', 12000)
     .then((d) => {
       PROV_ATLAS.data = d;
       PROV_ATLAS.status = 'ready';
@@ -3352,14 +3370,15 @@ function ipMapHtml(geo) {
   const key = `<span class="ip-map-key"><i></i>IP 归属地<i class="tri"></i>设备定位</span>`;
   const foot = `<div class="ip-map-foot">${key}<code>${esc(coords)}</code></div>`;
 
+  const cnGeo = isChinaGeo(geo);
   const prov = (() => {
     const byRegion = provinceFromGeo(geo);
     if (byRegion) return byRegion;
-    if (!geo || String(geo.country_code || '').toUpperCase() !== 'CN') return null;
+    if (!cnGeo) return null;
     const atlas = provinceAtlasState();
     return atlas.status === 'ready' ? provinceByPoint(focus.lat, focus.lon) : null;
   })();
-  if (!prov && geo && String(geo.country_code || '').toUpperCase() === 'CN' && PROV_ATLAS.status === 'loading') {
+  if (!prov && cnGeo && PROV_ATLAS.status === 'loading') {
     const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">中国</span></div>`;
     return `<div class="ip-map">${head}<div class="ip-map-empty">正在识别省份…</div>${foot}${loc}</div>`;
   }
@@ -3372,10 +3391,14 @@ function ipMapHtml(geo) {
     if (st.status === 'loading') {
       return `<div class="ip-map">${head}<div class="ip-map-empty">正在加载${esc(prov.name)}地图…</div>${foot}${loc}</div>`;
     }
+    if (prov.adcode !== '710000') {
+      return `<div class="ip-map">${head}<div class="ip-map-empty">${esc(prov.name)}地图加载失败，点“刷新”重试</div>${foot}${loc}</div>`;
+    }
   }
 
   const spot = locateLatLon(focus.lat, focus.lon);
-  const where = spot.name + (spot.near ? '（近海）' : '') + (spot.country ? ' · ' + spot.country : '');
+  let where = spot.name + (spot.near ? '（近海）' : '') + (spot.country ? ' · ' + spot.country : '');
+  if (cnGeo) where = PROV_ATLAS.status === 'error' ? '中国 · 省份地图加载失败' : '中国 · 省份未识别';
   const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">${esc(where)}</span></div>`;
   return `<div class="ip-map">${head}${ipMapSvg(spot, focus, ip, user)}${foot}${loc}</div>`;
 }
