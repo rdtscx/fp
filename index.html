@@ -2303,70 +2303,162 @@ async function collectNetwork() {
   }
 }
 
-async function fetchJSON(url, ms) {
+async function fetchJSON(url, ms, signal) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms || 3000);
+  const onAbort = () => ctrl.abort();
+  if (signal) {
+    if (signal.aborted) {
+      clearTimeout(timer);
+      throw new DOMException('Aborted', 'AbortError');
+    }
+    signal.addEventListener('abort', onAbort);
+  }
   try {
     const r = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return await r.json();
   } finally {
     clearTimeout(timer);
+    if (signal) signal.removeEventListener('abort', onAbort);
   }
 }
 
 const isIPv4 = (ip) => /^\d{1,3}(\.\d{1,3}){3}$/.test(String(ip));
 const isIPv6 = (ip) => typeof ip === 'string' && ip.includes(':') && /^[0-9a-f:.]+$/i.test(ip);
 
-async function fetchGeo() {
-  try {
-    const g = await fetchJSON('https://ipwho.is/', 8000);
-    if (g && g.success !== false && g.ip) {
-      return {
-        source: 'ipwho.is',
-        data: {
-          ip: g.ip,
-          type: g.type || (isIPv4(g.ip) ? 'IPv4' : 'IPv6'),
-          country: g.country || undefined,
-          country_code: g.country_code || undefined,
-          region: g.region || undefined,
-          city: g.city || undefined,
-          postal: g.postal || undefined,
-          lat: g.latitude,
-          lon: g.longitude,
-          timezone: g.timezone ? g.timezone.id : undefined,
-          asn: g.connection ? g.connection.asn : undefined,
-          org: g.connection ? g.connection.org : undefined,
-          isp: g.connection ? g.connection.isp : undefined
-        }
-      };
-    }
-  } catch (e) { /* 回退 ipinfo.io */ }
-  try {
-    const g = await fetchJSON('https://ipinfo.io/json', 8000);
-    if (g && g.ip) {
+// 并行竞速：第一个「经纬度 + 运营商 + 归属地」完整的接口胜出，其余请求被中止
+const GEO_SOURCES = [
+  {
+    name: 'ipwho.is',
+    url: 'https://ipwho.is/',
+    parse: (g) => (g && g.success !== false && g.ip) ? {
+      ip: g.ip,
+      type: g.type || (isIPv4(g.ip) ? 'IPv4' : 'IPv6'),
+      country: g.country || undefined,
+      country_code: g.country_code || undefined,
+      region: g.region || undefined,
+      city: g.city || undefined,
+      postal: g.postal || undefined,
+      lat: g.latitude,
+      lon: g.longitude,
+      timezone: g.timezone ? g.timezone.id : undefined,
+      asn: g.connection ? g.connection.asn : undefined,
+      org: g.connection ? g.connection.org : undefined,
+      isp: g.connection ? g.connection.isp : undefined
+    } : null
+  },
+  {
+    name: 'ipinfo.io',
+    url: 'https://ipinfo.io/json',
+    parse: (g) => {
+      if (!g || !g.ip) return null;
       const loc = String(g.loc || '').split(',').map((x) => Number(x));
       const org = String(g.org || '');
-      const asnMatch = org.match(/^(AS\d+)\s+(.*)$/);
+      const m = org.match(/^(AS\d+)\s+(.*)$/);
       return {
-        source: 'ipinfo.io',
-        data: {
-          ip: g.ip,
-          type: isIPv4(g.ip) ? 'IPv4' : 'IPv6',
-          city: g.city || undefined,
-          region: g.region || undefined,
-          country: g.country || undefined,
-          postal: g.postal || undefined,
-          lat: Number.isFinite(loc[0]) ? loc[0] : undefined,
-          lon: Number.isFinite(loc[1]) ? loc[1] : undefined,
-          asn: asnMatch ? asnMatch[1] : undefined,
-          org: asnMatch ? asnMatch[2] : org || undefined,
-          timezone: g.timezone || undefined
-        }
+        ip: g.ip,
+        type: isIPv4(g.ip) ? 'IPv4' : 'IPv6',
+        city: g.city || undefined,
+        region: g.region || undefined,
+        country: g.country || undefined,
+        postal: g.postal || undefined,
+        lat: Number.isFinite(loc[0]) ? loc[0] : undefined,
+        lon: Number.isFinite(loc[1]) ? loc[1] : undefined,
+        asn: m ? m[1] : undefined,
+        org: m ? m[2] : org || undefined,
+        timezone: g.timezone || undefined
       };
     }
-  } catch (e) { /* 两个接口均失败 */ }
-  return null;
+  },
+  {
+    name: 'ip.sb',
+    url: 'https://api.ip.sb/geoip',
+    parse: (g) => (g && g.ip) ? {
+      ip: g.ip,
+      type: isIPv4(g.ip) ? 'IPv4' : 'IPv6',
+      country: g.country || undefined,
+      country_code: g.country_code || undefined,
+      region: g.region || undefined,
+      city: g.city || undefined,
+      postal: g.postal_code || undefined,
+      lat: g.latitude,
+      lon: g.longitude,
+      timezone: g.timezone || undefined,
+      asn: g.asn ? 'AS' + g.asn : undefined,
+      org: g.asn_organization || g.organization || undefined,
+      isp: g.isp || undefined
+    } : null
+  },
+  {
+    name: 'ipwhois.app',
+    url: 'https://ipwhois.app/json/',
+    parse: (g) => (g && g.success !== false && g.ip) ? {
+      ip: g.ip,
+      type: g.type || (isIPv4(g.ip) ? 'IPv4' : 'IPv6'),
+      country: g.country || undefined,
+      country_code: g.country_code || undefined,
+      region: g.region || undefined,
+      city: g.city || undefined,
+      postal: g.postal || undefined,
+      lat: g.latitude,
+      lon: g.longitude,
+      timezone: g.timezone || undefined,
+      asn: g.asn || undefined,
+      org: g.org || undefined,
+      isp: g.isp || undefined
+    } : null
+  },
+  {
+    name: 'ipquery.io',
+    url: 'https://api.ipquery.io/?format=json',
+    parse: (g) => (g && g.ip && g.location) ? {
+      ip: g.ip,
+      type: isIPv4(g.ip) ? 'IPv4' : 'IPv6',
+      country: g.location.country || undefined,
+      country_code: g.location.country_code || undefined,
+      region: g.location.state || undefined,
+      city: g.location.city || undefined,
+      postal: g.location.zipcode || undefined,
+      lat: g.location.latitude,
+      lon: g.location.longitude,
+      timezone: g.location.timezone || undefined,
+      asn: g.isp ? g.isp.asn : undefined,
+      org: g.isp ? g.isp.org : undefined,
+      isp: g.isp ? g.isp.isp : undefined
+    } : null
+  }
+];
+
+const geoComplete = (g) => Number.isFinite(g.lat) && Number.isFinite(g.lon)
+  && !!(g.isp || g.org || g.asn)
+  && !!(g.country || g.region || g.city);
+
+function raceGeo(signal) {
+  return new Promise((resolve) => {
+    let left = GEO_SOURCES.length;
+    let fallback = null;
+    let settled = false;
+    GEO_SOURCES.forEach((src) => {
+      fetchJSON(src.url, 8000, signal)
+        .then((json) => src.parse(json))
+        .catch(() => null)
+        .then((data) => {
+          if (settled) return;
+          if (data && geoComplete(data)) {
+            settled = true;
+            resolve({ ...data, source: src.name });
+            return;
+          }
+          if (data && !fallback) fallback = { ...data, source: src.name };
+          left--;
+          if (left === 0) {
+            settled = true;
+            resolve(fallback);
+          }
+        });
+    });
+  });
 }
 
 let lanPromise = null;
@@ -2442,8 +2534,7 @@ function ipWait(ms) {
 }
 
 const hasPublicIp = () => isIPv4(IPSTATE.v4) || isIPv6(IPSTATE.v6);
-const hasGeo = () => !!(IPSTATE.geo && typeof IPSTATE.geo === 'object'
-  && Number.isFinite(IPSTATE.geo.lat) && Number.isFinite(IPSTATE.geo.lon));
+const hasGeo = () => !!(IPSTATE.geo && typeof IPSTATE.geo === 'object' && geoComplete(IPSTATE.geo));
 
 function publishIp() {
   refreshLiveDom();
@@ -2455,6 +2546,7 @@ function publishIp() {
 function refreshPublicIP(opts) {
   if (opts && opts.manual) {
     ipGen++;
+    if (geoRaceCtrl) geoRaceCtrl.abort();
     IPSTATE.v4 = null;
     IPSTATE.v6 = null;
     IPSTATE.geo = null;
@@ -2479,8 +2571,8 @@ async function resolveNetwork(gen) {
     first = false;
     await Promise.all(tasks.map((t) => t.catch(() => null)));
     if (gen !== ipGen || (hasPublicIp() && hasGeo())) return;
-    await ipWait(hasPublicIp() ? 4000 : delay);
-    if (!hasPublicIp()) delay = Math.min(delay * 2, 30000);
+    await ipWait(delay);
+    delay = Math.min(delay * 2, 30000);
   }
 }
 
@@ -2490,7 +2582,7 @@ async function fetchPublicIpOnce(gen) {
     liveRow('network', 'net-ipv4', '公网 IPv4', 'api.ipify.org / api64.ipify.org', () => IPSTATE.v4 || '查询中');
     liveRow('network', 'net-ipv6', '公网 IPv6', 'api6.ipify.org / api64.ipify.org', () => IPSTATE.v6 || '查询中');
     liveRow('network', 'net-lan', '本机网络 IP', 'WebRTC 本地候选（无 STUN）', () => IPSTATE.lan);
-    liveRow('network', 'net-geo', '出口归属地 / 运营商', 'ipwho.is / ipinfo.io', () => IPSTATE.geo || '查询中');
+    liveRow('network', 'net-geo', '出口归属地 / 运营商', 'ipwho.is / ipinfo.io / ip.sb / ipwhois.app / ipquery.io', () => IPSTATE.geo || '查询中');
   }
   await Promise.all([fetchIpv4(gen), fetchIpv6(gen), fetchLan(gen)]);
 }
@@ -2534,19 +2626,32 @@ async function fetchLan(gen) {
   publishIp();
 }
 
+let geoRaceCtrl = null;
+
 async function fetchGeoOnce(gen) {
-  const found = await fetchGeo();
-  if (gen !== ipGen || !found) return;
-  const geo = { ...found.data, source: found.source };
-  IPSTATE.geo = geo;
-  publishIp();
-  if (!Number.isFinite(geo.lat) || !Number.isFinite(geo.lon)) return;
-  const rev = await reverseGeo(geo.lat, geo.lon);
-  if (gen !== ipGen || !rev || IPSTATE.geo !== geo) return;
-  geo.district = rev.district;
-  geo.street = rev.street;
-  geo.rev = 'photon.komoot.io / bigdatacloud.net';
-  scheduleRender();
+  const ctrl = new AbortController();
+  geoRaceCtrl = ctrl;
+  try {
+    const found = await raceGeo(ctrl.signal);
+    ctrl.abort();
+    if (!found || gen !== ipGen) return;
+    IPSTATE.geo = found;
+    if (found.ip && !hasPublicIp()) {
+      if (isIPv4(found.ip)) IPSTATE.v4 = found.ip;
+      else if (isIPv6(found.ip)) IPSTATE.v6 = found.ip;
+    }
+    publishIp();
+    if (!Number.isFinite(found.lat) || !Number.isFinite(found.lon)) return;
+    const rev = await reverseGeo(found.lat, found.lon);
+    if (gen !== ipGen || !rev || IPSTATE.geo !== found) return;
+    found.district = rev.district;
+    found.street = rev.street;
+    found.rev = 'photon.komoot.io / bigdatacloud.net';
+    scheduleRender();
+  } finally {
+    if (geoRaceCtrl === ctrl) geoRaceCtrl = null;
+    ctrl.abort();
+  }
 }
 
 const WORLD_CONT = ['亚洲', '欧洲', '非洲', '北美洲', '南美洲', '大洋洲', '南极洲', '海洋'];
