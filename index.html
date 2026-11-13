@@ -3290,6 +3290,55 @@ function provinceSvg(st, focus, ip, user) {
   </svg>`;
 }
 
+const PROVINCE_BY_CODE = {};
+Object.keys(PROVINCE_ADCODE).forEach((name) => { PROVINCE_BY_CODE[PROVINCE_ADCODE[name]] = name; });
+
+let PROV_ATLAS = { status: 'idle', data: null };
+
+function provinceAtlasState() {
+  if (PROV_ATLAS.status !== 'idle') return PROV_ATLAS;
+  PROV_ATLAS.status = 'loading';
+  fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json', 8000)
+    .then((d) => {
+      PROV_ATLAS.data = d;
+      PROV_ATLAS.status = 'ready';
+      scheduleRender();
+    })
+    .catch(() => {
+      PROV_ATLAS.status = 'error';
+      scheduleRender();
+    });
+  return PROV_ATLAS;
+}
+
+function provinceByPoint(lat, lon) {
+  const d = PROV_ATLAS.data;
+  if (!d) return null;
+  for (const f of d.features || []) {
+    const g = f.geometry;
+    if (!g) continue;
+    const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
+    for (const poly of polys) {
+      const outer = poly && poly[0];
+      if (!outer || outer.length < 4) continue;
+      let inside = false;
+      for (let i = 0, j = outer.length - 1; i < outer.length; j = i++) {
+        const xi = outer[i][0];
+        const yi = outer[i][1];
+        const xj = outer[j][0];
+        const yj = outer[j][1];
+        if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+      }
+      if (!inside) continue;
+      const props = f.properties || {};
+      const code = String(props.adcode || '');
+      const name = PROVINCE_BY_CODE[code] || String(props.name || '').replace(/(省|市|自治区|特别行政区)$/, '');
+      if (name && PROVINCE_ADCODE[name]) return { name, adcode: PROVINCE_ADCODE[name] };
+    }
+  }
+  return null;
+}
+
 function ipMapHtml(geo) {
   const ip = (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lon))
     ? { lat: geo.lat, lon: geo.lon } : null;
@@ -3303,7 +3352,17 @@ function ipMapHtml(geo) {
   const key = `<span class="ip-map-key"><i></i>IP 归属地<i class="tri"></i>设备定位</span>`;
   const foot = `<div class="ip-map-foot">${key}<code>${esc(coords)}</code></div>`;
 
-  const prov = provinceFromGeo(geo);
+  const prov = (() => {
+    const byRegion = provinceFromGeo(geo);
+    if (byRegion) return byRegion;
+    if (!geo || String(geo.country_code || '').toUpperCase() !== 'CN') return null;
+    const atlas = provinceAtlasState();
+    return atlas.status === 'ready' ? provinceByPoint(focus.lat, focus.lon) : null;
+  })();
+  if (!prov && geo && String(geo.country_code || '').toUpperCase() === 'CN' && PROV_ATLAS.status === 'loading') {
+    const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">中国</span></div>`;
+    return `<div class="ip-map">${head}<div class="ip-map-empty">正在识别省份…</div>${foot}${loc}</div>`;
+  }
   if (prov) {
     const st = provinceState(prov);
     const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">中国 · ${esc(prov.name)}</span></div>`;
