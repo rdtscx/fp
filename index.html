@@ -97,13 +97,29 @@ h1{font-size:clamp(21px,2.4vw,28px);margin:6px 0 8px;line-height:1.25;letter-spa
 .ip-detail-title{font-size:10.5px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
 .ip-detail-addr{font-family:var(--mono);font-size:13px;color:#33507a;word-break:break-all}
 .ip-type,.ip-source{font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 7px;background:#fff}
-.ip-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:9px 20px;margin-top:11px}
+.ip-detail-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,370px);gap:12px 16px;margin-top:11px;align-items:start}
+.ip-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:9px 20px}
 .ip-detail-item{min-width:0;display:flex;flex-direction:column;gap:1px}
 .ip-detail-item b{font-size:9.5px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;font-weight:600}
 .ip-detail-item span{font-size:12px;color:#33404f;word-break:break-word;line-height:1.5}
 .ip-detail-item span em.ip-zh{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:2px;font-family:inherit}
 .ip-detail-item span em.ip-zh.na{color:var(--na)}
 .ip-detail-item span.na{color:var(--na)}
+button.ip-refresh{display:inline-flex;align-items:center;gap:5px;margin-left:auto;padding:2px 9px;font-size:10.5px;line-height:1.6;border-radius:999px;color:var(--muted);background:#fff}
+button.ip-refresh:hover{color:var(--accent);border-color:#c7d7f2;background:#f7faff}
+button.ip-refresh svg{width:11px;height:11px;flex:none}
+button.ip-refresh.busy{color:var(--dim);cursor:progress}
+button.ip-refresh.busy svg{animation:spin 1.1s linear infinite}
+.ip-map{border:1px solid var(--line);border-radius:9px;background:#fff;padding:8px 9px 7px;min-width:0}
+.ip-map-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.ip-map-head b{font-size:9.5px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;font-weight:600}
+.ip-map-continent{font-size:10.5px;color:#2f5db8;background:var(--accent-soft);border:1px solid #dbe6fa;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.ip-map svg{display:block;width:100%;height:auto}
+.ip-map svg text{font-family:var(--mono);font-size:9.5px;fill:#9aa3af}
+.ip-map svg text.map-coord{fill:var(--accent)}
+.ip-map-empty{height:132px;display:grid;place-items:center;font-size:11px;color:var(--dim);background:var(--panel2);border:1px dashed var(--line);border-radius:6px;text-align:center;padding:0 10px}
+.ip-map-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:5px;font-size:10px;color:var(--dim)}
+.ip-map-foot code{font-family:var(--mono);font-size:10px;color:#33507a}
 .mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .mini .chip{font-family:var(--mono);font-size:10px}
 .skeleton{display:block;background:linear-gradient(90deg,#eef1f5,#f7f9fb,#eef1f5);background-size:200% 100%;animation:shimmer 1.4s linear infinite;border-radius:5px}
@@ -176,12 +192,14 @@ footer p{margin:3px 0}
 @keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(430%)}}
 @keyframes pulse{50%{opacity:.4}}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 @media (min-width:1500px){
   .topbar-inner,.wrap{max-width:1440px}
 }
 @media (max-width:980px){
   .hero-grid{grid-template-columns:1fr;gap:18px}
+  .ip-detail-body{grid-template-columns:1fr}
 }
 @media (max-width:760px){
   .topbar-inner{padding:9px 12px;gap:8px}
@@ -316,7 +334,7 @@ const SUMMARY = {
   hashes: { stable: null, composite: null, canvas: null, audio: null, webgl: null, fonts: null, layout: null }
 };
 
-const IPSTATE = { v4: null, v6: null, lan: null, geo: null, loaded: false };
+const IPSTATE = { v4: null, v6: null, lan: null, geo: null };
 let ipRowsAdded = false;
 
 const FP = {};
@@ -871,7 +889,7 @@ function renderHero() {
   const geo = IPSTATE.geo && typeof IPSTATE.geo === 'object' ? IPSTATE.geo : null;
   const ipv4 = (typeof IPSTATE.v4 === 'string' && isIPv4(IPSTATE.v4)) ? IPSTATE.v4 : null;
   const ipv6 = (typeof IPSTATE.v6 === 'string' && isIPv6(IPSTATE.v6)) ? IPSTATE.v6 : null;
-  const ipMain = ipv4 || ipv6 || (IPSTATE.loaded ? '未能获取' : '查询中');
+  const ipMain = ipv4 || ipv6 || '查询中';
   const stats = [
     ['浏览器', SUMMARY.browser],
     ['内核', SUMMARY.engine],
@@ -904,7 +922,7 @@ function renderHero() {
     ? `<div class="mini">${minis.map(([k, v]) => `<span class="chip mono" title="${esc(v)}">${esc(k)} ${esc(v.slice(0, 10))}…<button class="copy" data-copy="${esc(v)}">复制</button></span>`).join('')}</div>`
     : '';
 
-  const field = (v) => (v === null || v === undefined || v === '') ? '<span class="na">未提供</span>' : esc(v);
+  const field = (v) => (v === null || v === undefined || v === '') ? `<span class="na">${geo ? '未提供' : '查询中'}</span>` : esc(v);
   const countryZh = (() => {
     if (!geo) return null;
     if (geo.country_code) {
@@ -925,7 +943,7 @@ function renderHero() {
     ? `<span>${esc(ispEn)}${ispCn
       ? (ispCn === ispEn ? '' : `<em class="ip-zh">${esc(ispCn)}</em>`)
       : '<em class="ip-zh na">未提供中文名</em>'}</span>`
-    : '<span class="na">未提供</span>';
+    : `<span class="na">${geo ? '未提供' : '查询中'}</span>`;
   const detailItems = [
     ['网络服务商', ispCell, true],
     ['位置（归属地）', geoLoc, false],
@@ -937,17 +955,27 @@ function renderHero() {
     ['时区', geo ? geo.timezone : null, false]
   ];
 
+  const ipBusy = !ipv4 && !ipv6;
   const ipDetail = `
     <div class="ip-detail">
       <div class="ip-detail-head">
         <span class="ip-detail-title">网络IP</span>
         <code class="ip-detail-addr">${esc(ipMain)}</code>
-        <span class="ip-type">${esc(geo && geo.type ? geo.type : (ipv4 ? 'IPv4' : ipv6 ? 'IPv6' : '—'))}</span>
+        <span class="ip-type">${esc(geo && geo.type ? geo.type : (ipv4 ? 'IPv4' : ipv6 ? 'IPv6' : '待定'))}</span>
         ${geo && geo.source ? `<span class="ip-source">${esc(geo.source)}</span>` : ''}
         ${geo && geo.rev ? `<span class="ip-source">区/街道：${esc(geo.rev)}</span>` : ''}
+        <button id="btn-ip-refresh" class="ip-refresh${ipBusy ? ' busy' : ''}" title="只重新查询网络 IP 与归属地，不重载页面">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3.1 8a4.9 4.9 0 0 1 8.3-3.5"/><path d="M11.4 1.7v2.9H8.5"/>
+            <path d="M12.9 8a4.9 4.9 0 0 1-8.3 3.5"/><path d="M4.6 14.3v-2.9h2.9"/>
+          </svg>刷新
+        </button>
       </div>
-      <div class="ip-detail-grid">
-        ${detailItems.map(([k, v, raw]) => `<div class="ip-detail-item"><b>${esc(k)}</b>${raw ? v : `<span>${field(v)}</span>`}</div>`).join('')}
+      <div class="ip-detail-body">
+        <div class="ip-detail-grid">
+          ${detailItems.map(([k, v, raw]) => `<div class="ip-detail-item"><b>${esc(k)}</b>${raw ? v : `<span>${field(v)}</span>`}</div>`).join('')}
+        </div>
+        ${ipMapHtml(geo)}
       </div>
     </div>`;
 
@@ -1257,6 +1285,7 @@ document.addEventListener('click', (e) => {
     if (btn.id === 'btn-copy-all') { copyAll(); return; }
     if (btn.id === 'btn-download') { downloadJSON(); return; }
     if (btn.id === 'btn-reload') { forceRefresh(); return; }
+    if (btn.id === 'btn-ip-refresh') { refreshPublicIP({ manual: true }); return; }
     if (btn.id === 'btn-expand') { expandAll(); return; }
     if (btn.id === 'btn-collapse') { collapseAll(); return; }
     if (btn.dataset.expand !== undefined) {
@@ -1513,8 +1542,8 @@ function collectHardware() {
   SUMMARY.os = os.short;
 
   add('hardware', 'navigator.platform', navigator.platform, 'navigator.platform');
-  liveRow('hardware', 'hw-ipv4', '公网 IPv4', 'api.ipify.org', () => IPSTATE.v4);
-  liveRow('hardware', 'hw-ipv6', '公网 IPv6', 'api6.ipify.org', () => IPSTATE.v6);
+  liveRow('hardware', 'hw-ipv4', '公网 IPv4', 'api.ipify.org', () => IPSTATE.v4 || '查询中');
+  liveRow('hardware', 'hw-ipv6', '公网 IPv6', 'api6.ipify.org', () => IPSTATE.v6 || '查询中');
   liveRow('hardware', 'hw-lan', '本机网络 IP', 'WebRTC 本地候选（无 STUN）', () => IPSTATE.lan);
   if (uaHigh) {
     add('hardware', 'UA-CH platformVersion', uaHigh.platformVersion || '不可用', 'getHighEntropyValues(["platformVersion"])');
@@ -2283,7 +2312,7 @@ const isIPv6 = (ip) => typeof ip === 'string' && ip.includes(':') && /^[0-9a-f:.
 
 async function fetchGeo() {
   try {
-    const g = await fetchJSON('https://ipwho.is/', 3000);
+    const g = await fetchJSON('https://ipwho.is/', 8000);
     if (g && g.success !== false && g.ip) {
       return {
         source: 'ipwho.is',
@@ -2306,7 +2335,7 @@ async function fetchGeo() {
     }
   } catch (e) { /* 回退 ipinfo.io */ }
   try {
-    const g = await fetchJSON('https://ipinfo.io/json', 3000);
+    const g = await fetchJSON('https://ipinfo.io/json', 8000);
     if (g && g.ip) {
       const loc = String(g.loc || '').split(',').map((x) => Number(x));
       const org = String(g.org || '');
@@ -2392,73 +2421,241 @@ async function reverseGeo(lat, lon) {
   return { district: districtFinal, street };
 }
 
-async function refreshPublicIP() {
-  if (ipPending) return;
-  ipPending = true;
-  try {
-    await refreshPublicIPOnce();
-  } finally {
-    ipPending = false;
+let ipGen = 0;
+let ipRunningGen = -1;
+let ipWaiter = null;
+
+// 可被刷新按钮或网络事件打断的等待
+function ipWait(ms) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => { ipWaiter = null; resolve(); }, ms);
+    ipWaiter = () => { clearTimeout(timer); ipWaiter = null; resolve(); };
+  });
+}
+
+const hasPublicIp = () => isIPv4(IPSTATE.v4) || isIPv6(IPSTATE.v6);
+const hasGeo = () => !!(IPSTATE.geo && typeof IPSTATE.geo === 'object'
+  && Number.isFinite(IPSTATE.geo.lat) && Number.isFinite(IPSTATE.geo.lon));
+
+function publishIp() {
+  refreshLiveDom();
+  scheduleRender();
+}
+
+// 网络 IP 不做超时放弃：没拿到地址就一直重试，退避上限 30 秒。
+// manual 为真时清空旧值重查（刷新按钮），页面自动刷新只重新请求、失败时保留旧值。
+function refreshPublicIP(opts) {
+  if (opts && opts.manual) {
+    ipGen++;
+    IPSTATE.v4 = null;
+    IPSTATE.v6 = null;
+    IPSTATE.geo = null;
+    scheduleRender();
+  }
+  if (ipWaiter) ipWaiter();
+  if (ipRunningGen === ipGen) return;
+  ipRunningGen = ipGen;
+  const gen = ipGen;
+  resolveNetwork(gen)
+    .catch((e) => console.warn('[ip]', e))
+    .finally(() => { if (ipRunningGen === gen) ipRunningGen = -1; });
+}
+
+async function resolveNetwork(gen) {
+  let delay = 1500;
+  let first = true;
+  while (gen === ipGen) {
+    const tasks = [];
+    if (first || !hasPublicIp()) tasks.push(fetchPublicIpOnce(gen));
+    if (first || !hasGeo()) tasks.push(fetchGeoOnce(gen));
+    first = false;
+    await Promise.all(tasks.map((t) => t.catch(() => null)));
+    if (gen !== ipGen || (hasPublicIp() && hasGeo())) return;
+    await ipWait(hasPublicIp() ? 4000 : delay);
+    if (!hasPublicIp()) delay = Math.min(delay * 2, 30000);
   }
 }
 
-let ipPending = false;
-
-async function refreshPublicIPOnce() {
-  const geoTask = fetchGeo();
-  const lanTask = gatherLocalIPs();
-  const v4Task = fetchJSON('https://api.ipify.org?format=json', 2500).catch(() => null);
-  const v6Task = fetchJSON('https://api6.ipify.org?format=json', 1500).catch(() => null);
-
-  const v4res = await v4Task;
-  let v4 = (v4res && isIPv4(v4res.ip)) ? v4res.ip : null;
-  if (v4) {
-    IPSTATE.v4 = v4;
-    IPSTATE.loaded = true;
-    refreshLiveDom();
-    scheduleRender();
-  }
-
-  const [v6res, geoR, lanR] = await Promise.allSettled([v6Task, geoTask, lanTask]);
-  let v6 = (v6res.status === 'fulfilled' && v6res.value && isIPv6(v6res.value.ip)) ? v6res.value.ip : null;
-  if (!v4 || !v6) {
-    try {
-      const fb = await fetchJSON('https://api64.ipify.org?format=json', 2500);
-      const ip = fb && fb.ip;
-      if (ip && isIPv4(ip) && !v4) v4 = ip;
-      else if (ip && isIPv6(ip) && !v6) v6 = ip;
-    } catch (e) { /* 回退接口也失败 */ }
-  }
-  const lan = lanR.status === 'fulfilled' ? lanR.value : [];
-
-  IPSTATE.v4 = (v4 && isIPv4(v4)) ? v4 : '未能获取（api.ipify.org 与 api64.ipify.org 均无响应）';
-  IPSTATE.v6 = (v6 && isIPv6(v6)) ? v6 : '未能获取（当前网络无 IPv6 出口）';
-  IPSTATE.lan = lan.length ? lan : '未能获取（浏览器隐藏内网地址或改用 mDNS）';
-  IPSTATE.geo = (geoR.status === 'fulfilled' && geoR.value)
-    ? { ...geoR.value.data, source: geoR.value.source }
-    : '未能获取（ipwho.is 与 ipinfo.io 均无响应）';
-  IPSTATE.loaded = true;
-
+async function fetchPublicIpOnce(gen) {
   if (!ipRowsAdded) {
     ipRowsAdded = true;
-    liveRow('network', 'net-ipv4', '公网 IPv4', 'api.ipify.org / api64.ipify.org', () => IPSTATE.v4);
-    liveRow('network', 'net-ipv6', '公网 IPv6', 'api6.ipify.org / api64.ipify.org', () => IPSTATE.v6);
+    liveRow('network', 'net-ipv4', '公网 IPv4', 'api.ipify.org / api64.ipify.org', () => IPSTATE.v4 || '查询中');
+    liveRow('network', 'net-ipv6', '公网 IPv6', 'api6.ipify.org / api64.ipify.org', () => IPSTATE.v6 || '查询中');
     liveRow('network', 'net-lan', '本机网络 IP', 'WebRTC 本地候选（无 STUN）', () => IPSTATE.lan);
-    liveRow('network', 'net-geo', '出口归属地 / 运营商', 'ipwho.is / ipinfo.io', () => IPSTATE.geo);
+    liveRow('network', 'net-geo', '出口归属地 / 运营商', 'ipwho.is / ipinfo.io', () => IPSTATE.geo || '查询中');
   }
-  refreshLiveDom();
-  scheduleRender();
+  await Promise.all([fetchIpv4(gen), fetchIpv6(gen), fetchLan(gen)]);
+}
 
-  const g = IPSTATE.geo;
-  if (g && typeof g === 'object' && Number.isFinite(g.lat) && Number.isFinite(g.lon)) {
-    const rev = await reverseGeo(g.lat, g.lon);
-    if (rev && IPSTATE.geo === g) {
-      g.district = rev.district;
-      g.street = rev.street;
-      g.rev = 'photon.komoot.io / bigdatacloud.net';
-      scheduleRender();
+async function fetchIpv4(gen) {
+  const ip = await ipifyIp('https://api.ipify.org?format=json');
+  if (gen !== ipGen) return;
+  if (isIPv4(ip)) { IPSTATE.v4 = ip; publishIp(); return; }
+  const fb = await ipifyIp('https://api64.ipify.org?format=json');
+  if (gen !== ipGen) return;
+  if (isIPv4(fb)) { IPSTATE.v4 = fb; publishIp(); }
+  else if (isIPv6(fb) && !IPSTATE.v6) { IPSTATE.v6 = fb; publishIp(); }
+}
+
+async function fetchIpv6(gen) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const ip = await ipifyIp('https://api6.ipify.org?format=json', 10000);
+    if (gen !== ipGen) return;
+    if (isIPv6(ip)) {
+      if (!IPSTATE.v6) { IPSTATE.v6 = ip; publishIp(); }
+      return;
     }
+    if (attempt === 0) await new Promise((r) => setTimeout(r, 2000));
   }
+}
+
+async function ipifyIp(url, ms) {
+  try {
+    const r = await fetchJSON(url, ms || 6000);
+    return r && typeof r.ip === 'string' ? r.ip.trim() : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function fetchLan(gen) {
+  if (IPSTATE.lan) return;
+  const list = await gatherLocalIPs();
+  if (gen !== ipGen || IPSTATE.lan) return;
+  IPSTATE.lan = list.length ? list : '未能获取（浏览器隐藏内网地址或改用 mDNS）';
+  publishIp();
+}
+
+async function fetchGeoOnce(gen) {
+  const found = await fetchGeo();
+  if (gen !== ipGen || !found) return;
+  const geo = { ...found.data, source: found.source };
+  IPSTATE.geo = geo;
+  publishIp();
+  if (!Number.isFinite(geo.lat) || !Number.isFinite(geo.lon)) return;
+  const rev = await reverseGeo(geo.lat, geo.lon);
+  if (gen !== ipGen || !rev || IPSTATE.geo !== geo) return;
+  geo.district = rev.district;
+  geo.street = rev.street;
+  geo.rev = 'photon.komoot.io / bigdatacloud.net';
+  scheduleRender();
+}
+
+const CONTINENTS = [
+  { name: '北美洲', polys: [
+    [[-168,66],[-165,60],[-158,57],[-152,58],[-147,60],[-140,60],[-133,56],[-129,53],[-126,49],[-124,44],[-121,38],[-117,33],[-114,30],[-110,24],[-106,21],[-100,18],[-95,16],[-92,15],[-88,16],[-86,13],[-83,9],[-79,8],[-82,15],[-84,21],[-81,25],[-80,30],[-75,35],[-76,40],[-70,42],[-67,45],[-63,45],[-60,47],[-56,50],[-64,54],[-62,60],[-78,62],[-95,68],[-110,69],[-125,70],[-140,70],[-156,71]],
+    [[-45,60],[-20,70],[-22,78],[-40,84],[-58,82],[-55,72],[-50,65]]
+  ] },
+  { name: '南美洲', polys: [
+    [[-79,9],[-75,11],[-70,12],[-62,11],[-52,5],[-50,0],[-44,-2],[-35,-5],[-38,-13],[-40,-20],[-48,-25],[-53,-34],[-58,-38],[-62,-40],[-64,-45],[-68,-52],[-72,-54],[-75,-50],[-73,-42],[-71,-30],[-70,-20],[-76,-14],[-81,-6],[-80,0],[-77,5]]
+  ] },
+  { name: '非洲', polys: [
+    [[-17,15],[-16,21],[-10,27],[-5,31],[0,32],[10,37],[20,32],[30,31],[34,31],[35,28],[38,22],[43,12],[51,12],[48,5],[42,-2],[40,-10],[40,-15],[35,-22],[32,-30],[26,-34],[18,-34],[12,-18],[9,-2],[5,5],[-4,5],[-8,4],[-13,9]],
+    [[43,-12],[50,-15],[50,-25],[45,-25],[43,-20]]
+  ] },
+  { name: '欧洲', polys: [
+    [[-10,36],[-9,43],[-2,43],[-2,48],[-5,50],[0,51],[4,53],[8,54],[10,57],[5,58],[8,63],[15,69],[22,70],[30,70],[40,69],[40,62],[40,55],[40,48],[40,45],[40,42],[28,40],[20,40],[14,38],[18,40],[16,36],[8,44],[3,42],[-4,37]],
+    [[-24,65],[-14,66],[-14,64],[-22,63]]
+  ] },
+  { name: '亚洲', polys: [
+    [[40,45],[50,45],[55,50],[60,55],[70,60],[80,70],[100,76],[120,73],[140,75],[170,70],[180,68],[180,60],[160,60],[155,55],[145,45],[140,42],[130,42],[127,39],[126,36],[122,35],[122,31],[120,25],[118,24],[110,20],[105,10],[100,13],[95,16],[88,22],[80,15],[77,8],[72,20],[65,25],[58,25],[50,15],[43,12],[38,22],[35,28],[40,42]],
+    [[95,6],[105,0],[115,-8],[130,-8],[141,-3],[141,0],[130,2],[118,4],[105,6]],
+    [[130,32],[132,32],[135,34],[140,35],[141,38],[143,41],[145,44],[141,45],[139,41],[136,37],[132,34],[130,33]]
+  ] },
+  { name: '大洋洲', polys: [
+    [[114,-22],[114,-34],[122,-34],[129,-32],[138,-35],[146,-39],[150,-37],[153,-33],[154,-27],[146,-19],[142,-11],[136,-12],[130,-11],[126,-14],[122,-18]],
+    [[166,-46],[174,-41],[178,-37],[173,-35],[168,-44]]
+  ] },
+  { name: '南极洲', polys: [
+    [[-180,-72],[-150,-75],[-120,-73],[-90,-72],[-60,-63],[-30,-70],[0,-70],[30,-68],[60,-67],[90,-67],[120,-66],[150,-72],[180,-72],[180,-90],[-180,-90]]
+  ] }
+];
+
+const MAP_VIEW = { w: 720, h: 384, top: 6, plot: 360, scale: 2 };
+const mapX = (lon) => (lon + 180) * MAP_VIEW.scale;
+const mapY = (lat) => MAP_VIEW.top + (90 - lat) * MAP_VIEW.scale;
+const fmtLat = (v) => Math.abs(v).toFixed(2) + '°' + (v >= 0 ? 'N' : 'S');
+const fmtLon = (v) => Math.abs(v).toFixed(2) + '°' + (v >= 0 ? 'E' : 'W');
+
+function pointInPoly(x, y, pts) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i];
+    const [xj, yj] = pts[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function segDist(px, py, ax, ay, bx, by) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len = dx * dx + dy * dy;
+  let t = len ? ((px - ax) * dx + (py - ay) * dy) / len : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+// 先用点包含判定大陆，落在海岸线外时再按度数距离归为近海
+function continentAt(lat, lon) {
+  let nearest = null;
+  for (const c of CONTINENTS) {
+    let min = Infinity;
+    for (const poly of c.polys) {
+      if (pointInPoly(lon, lat, poly)) return { name: c.name, near: false };
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        min = Math.min(min, segDist(lon, lat, poly[j][0], poly[j][1], poly[i][0], poly[i][1]));
+      }
+    }
+    if (!nearest || min < nearest.min) nearest = { name: c.name, min };
+  }
+  if (nearest && nearest.min < 4) return { name: nearest.name, near: true };
+  return { name: '海洋', near: false };
+}
+
+function ipMapSvg(lat, lon) {
+  const x = mapX(lon);
+  const y = mapY(lat);
+  const bottom = MAP_VIEW.top + MAP_VIEW.plot;
+  const grid = [];
+  for (let g = -180; g <= 180; g += 30) {
+    grid.push(`<line x1="${mapX(g)}" y1="${MAP_VIEW.top}" x2="${mapX(g)}" y2="${bottom}" stroke="#e8eef7" stroke-width="1"/>`);
+  }
+  for (let g = -60; g <= 60; g += 30) {
+    grid.push(`<line x1="0" y1="${mapY(g)}" x2="${MAP_VIEW.w}" y2="${mapY(g)}" stroke="#e8eef7" stroke-width="1"/>`);
+  }
+  const land = CONTINENTS.map((c) => c.polys.map((poly) =>
+    `<polygon points="${poly.map(([lo, la]) => `${mapX(lo).toFixed(1)},${mapY(la).toFixed(1)}`).join(' ')}" fill="#dfe7f2" stroke="#c6d3e3" stroke-width="1" stroke-linejoin="round"/>`
+  ).join('')).join('');
+  const lonLabs = [-120, -60, 0, 60, 120].map((g) =>
+    `<text x="${mapX(g)}" y="${MAP_VIEW.h - 4}" text-anchor="middle">${g === 0 ? '0°' : Math.abs(g) + '°' + (g > 0 ? 'E' : 'W')}</text>`).join('');
+  const latLabs = [-60, -30, 0, 30, 60].map((g) =>
+    `<text x="4" y="${mapY(g) + 3}">${g === 0 ? '0°' : Math.abs(g) + '°' + (g > 0 ? 'N' : 'S')}</text>`).join('');
+  const lonLabX = Math.max(28, Math.min(MAP_VIEW.w - 28, x));
+  const latLab = x > MAP_VIEW.w - 70
+    ? `<text x="${x - 7}" y="${Math.max(MAP_VIEW.top + 10, y - 7)}" text-anchor="end" class="map-coord">${fmtLat(lat)}</text>`
+    : `<text x="${x + 7}" y="${Math.max(MAP_VIEW.top + 10, y - 7)}" class="map-coord">${fmtLat(lat)}</text>`;
+  return `<svg viewBox="0 0 ${MAP_VIEW.w} ${MAP_VIEW.h}" role="img" aria-label="简版世界地图，当前经纬度 ${fmtLat(lat)} ${fmtLon(lon)}">
+    <defs><clipPath id="ip-map-clip"><rect x="0" y="${MAP_VIEW.top}" width="${MAP_VIEW.w}" height="${MAP_VIEW.plot}"/></clipPath></defs>
+    <rect x="0" y="${MAP_VIEW.top}" width="${MAP_VIEW.w}" height="${MAP_VIEW.plot}" fill="#f4f8fd"/>
+    <g clip-path="url(#ip-map-clip)">${grid.join('')}${land}</g>
+    <rect x="0" y="${MAP_VIEW.top}" width="${MAP_VIEW.w}" height="${MAP_VIEW.plot}" fill="none" stroke="#e2e8f2"/>
+    <line x1="${x}" y1="${MAP_VIEW.top}" x2="${x}" y2="${bottom}" stroke="#3f6fd8" stroke-width="1" stroke-dasharray="4 4" opacity=".6"/>
+    <line x1="0" y1="${y}" x2="${MAP_VIEW.w}" y2="${y}" stroke="#3f6fd8" stroke-width="1" stroke-dasharray="4 4" opacity=".6"/>
+    <circle cx="${x}" cy="${y}" r="9" fill="#3f6fd8" opacity=".14"/>
+    <circle cx="${x}" cy="${y}" r="3.6" fill="#3f6fd8" stroke="#fff" stroke-width="1.6"/>
+    <text x="${lonLabX}" y="${MAP_VIEW.top + 11}" text-anchor="middle" class="map-coord">${fmtLon(lon)}</text>
+    ${latLab}
+    ${lonLabs}${latLabs}
+  </svg>`;
+}
+
+function ipMapHtml(geo) {
+  const has = !!(geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lon));
+  const continent = has ? continentAt(geo.lat, geo.lon) : null;
+  const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">${has ? esc(continent.name + (continent.near ? '（近海）' : '')) : '查询中'}</span></div>`;
+  if (!has) return `<div class="ip-map">${head}<div class="ip-map-empty">取得经纬度后自动绘制</div></div>`;
+  return `<div class="ip-map">${head}${ipMapSvg(geo.lat, geo.lon)}<div class="ip-map-foot"><span>虚线交点即当前坐标</span><code>${esc(fmtLat(geo.lat))} ${esc(fmtLon(geo.lon))}</code></div></div>`;
 }
 
 function parseCandidate(c) {
@@ -2896,7 +3093,7 @@ async function startFresh() {
   UI.status = 'partial';
   render();
 
-  const ipTask = refreshPublicIP().catch((e) => console.warn('[ip]', e));
+  const ipTask = refreshPublicIP();
   await Promise.allSettled([collectHeavy(), phaseB(), ipTask]);
 
   markAllDone();
