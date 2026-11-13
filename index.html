@@ -2584,10 +2584,10 @@ function publishIp() {
 // 网络 IP 不做超时放弃：没拿到地址就一直重试，退避上限 30 秒。
 // manual 为真时清空旧值重查（刷新按钮），页面自动刷新只重新请求、失败时保留旧值。
 function refreshPublicIP(opts) {
+  resetProvinceView();
   if (opts && opts.manual) {
     ipGen++;
     if (geoRaceCtrl) geoRaceCtrl.abort();
-    resetProvinceMaps();
     IPSTATE.v4 = null;
     IPSTATE.v6 = null;
     IPSTATE.geo = null;
@@ -3050,7 +3050,8 @@ const PROVINCE_CAPITAL = {
   新疆: '乌鲁木齐', 台湾: '台北', 香港: '香港', 澳门: '澳门'
 };
 
-const PROV_CACHE = new Map();
+const PROVINCE_BY_CODE = {};
+Object.keys(PROVINCE_ADCODE).forEach((name) => { PROVINCE_BY_CODE[PROVINCE_ADCODE[name]] = name; });
 
 function isChinaGeo(geo) {
   if (!geo) return false;
@@ -3075,9 +3076,99 @@ function provinceFromGeo(geo) {
   return adcode ? { name, adcode } : null;
 }
 
-function resetProvinceMaps() {
-  PROV_ATLAS = { status: 'idle', data: null };
-  PROV_CACHE.clear();
+function provinceByPointIn(atlas, lat, lon) {
+  const d = atlas;
+  if (!d) return null;
+  for (const f of d.features || []) {
+    const g = f.geometry;
+    if (!g) continue;
+    const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
+    for (const poly of polys) {
+      const outer = poly && poly[0];
+      if (!outer || outer.length < 4) continue;
+      let inside = false;
+      for (let i = 0, j = outer.length - 1; i < outer.length; j = i++) {
+        const xi = outer[i][0];
+        const yi = outer[i][1];
+        const xj = outer[j][0];
+        const yj = outer[j][1];
+        if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+      }
+      if (!inside) continue;
+      const props = f.properties || {};
+      const code = String(props.adcode || '');
+      const name = PROVINCE_BY_CODE[code] || String(props.name || '').replace(/(省|市|自治区|特别行政区)$/, '');
+      if (name && PROVINCE_ADCODE[name]) return { name, adcode: PROVINCE_ADCODE[name] };
+    }
+  }
+  return null;
+}
+
+// 单轮状态：每次 IP 查询重新拉取地图数据，不做跨轮缓存
+let PROV_VIEW = { geoRef: null, phase: 'idle' };
+let PROV_TOKEN = 0;
+
+function resetProvinceView() {
+  PROV_TOKEN++;
+  PROV_VIEW = { geoRef: null, phase: 'idle' };
+}
+
+function ensureProvinceView() {
+  const geo = IPSTATE.geo;
+  if (!geo || typeof geo !== 'object') {
+    if (PROV_VIEW.geoRef) resetProvinceView();
+    return;
+  }
+  if (PROV_VIEW.geoRef === geo) return;
+  if (!isChinaGeo(geo)) {
+    PROV_TOKEN++;
+    PROV_VIEW = { geoRef: geo, phase: 'overseas' };
+    scheduleRender();
+    return;
+  }
+  const token = ++PROV_TOKEN;
+  const view = { geoRef: geo, phase: 'loading', name: null, adcode: null };
+  PROV_VIEW = view;
+  const byRegion = provinceFromGeo(geo);
+  if (byRegion) {
+    loadProvinceInto(view, byRegion, token);
+    return;
+  }
+  fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json', 12000)
+    .then((atlas) => {
+      if (token !== PROV_TOKEN) return;
+      const prov = provinceByPointIn(atlas, geo.lat, geo.lon);
+      if (!prov) {
+        view.phase = 'unknown';
+        scheduleRender();
+        return;
+      }
+      loadProvinceInto(view, prov, token);
+    })
+    .catch(() => {
+      if (token === PROV_TOKEN) {
+        view.phase = 'error';
+        scheduleRender();
+      }
+    });
+}
+
+function loadProvinceInto(view, prov, token) {
+  view.name = prov.name;
+  view.adcode = prov.adcode;
+  fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/' + prov.adcode + '_full.json', 12000)
+    .then((data) => {
+      if (token !== PROV_TOKEN) return;
+      buildProvince(view, data);
+      view.phase = 'ready';
+      scheduleRender();
+    })
+    .catch(() => {
+      if (token === PROV_TOKEN) {
+        view.phase = 'error';
+        scheduleRender();
+      }
+    });
 }
 
 function simplifyLatLon(ring, tol) {
@@ -3124,24 +3215,6 @@ function ringAreaLatLon(ring) {
     s += a[0] * b[1] - b[0] * a[1];
   }
   return s / 2;
-}
-
-function provinceState(prov) {
-  const cached = PROV_CACHE.get(prov.adcode);
-  if (cached) return cached;
-  const st = { status: 'loading', name: prov.name, adcode: prov.adcode };
-  PROV_CACHE.set(prov.adcode, st);
-  fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/' + prov.adcode + '_full.json', 12000)
-    .then((data) => {
-      buildProvince(st, data);
-      st.status = 'ready';
-      scheduleRender();
-    })
-    .catch(() => {
-      st.status = 'error';
-      scheduleRender();
-    });
-  return st;
 }
 
 function buildProvince(st, geoData) {
@@ -3308,97 +3381,42 @@ function provinceSvg(st, focus, ip, user) {
   </svg>`;
 }
 
-const PROVINCE_BY_CODE = {};
-Object.keys(PROVINCE_ADCODE).forEach((name) => { PROVINCE_BY_CODE[PROVINCE_ADCODE[name]] = name; });
-
-let PROV_ATLAS = { status: 'idle', data: null };
-
-function provinceAtlasState() {
-  if (PROV_ATLAS.status !== 'idle') return PROV_ATLAS;
-  PROV_ATLAS.status = 'loading';
-  fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json', 12000)
-    .then((d) => {
-      PROV_ATLAS.data = d;
-      PROV_ATLAS.status = 'ready';
-      scheduleRender();
-    })
-    .catch(() => {
-      PROV_ATLAS.status = 'error';
-      scheduleRender();
-    });
-  return PROV_ATLAS;
-}
-
-function provinceByPoint(lat, lon) {
-  const d = PROV_ATLAS.data;
-  if (!d) return null;
-  for (const f of d.features || []) {
-    const g = f.geometry;
-    if (!g) continue;
-    const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
-    for (const poly of polys) {
-      const outer = poly && poly[0];
-      if (!outer || outer.length < 4) continue;
-      let inside = false;
-      for (let i = 0, j = outer.length - 1; i < outer.length; j = i++) {
-        const xi = outer[i][0];
-        const yi = outer[i][1];
-        const xj = outer[j][0];
-        const yj = outer[j][1];
-        if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
-      }
-      if (!inside) continue;
-      const props = f.properties || {};
-      const code = String(props.adcode || '');
-      const name = PROVINCE_BY_CODE[code] || String(props.name || '').replace(/(省|市|自治区|特别行政区)$/, '');
-      if (name && PROVINCE_ADCODE[name]) return { name, adcode: PROVINCE_ADCODE[name] };
-    }
-  }
-  return null;
-}
-
 function ipMapHtml(geo) {
   const ip = (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lon))
     ? { lat: geo.lat, lon: geo.lon } : null;
   const user = hasUserLoc() ? { lat: USERLOC.lat, lon: USERLOC.lon, acc: USERLOC.acc } : null;
-  const focus = ip || user;
   const loc = userLocNote(user);
+
+  if (!geo) {
+    return `<div class="ip-map"><div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">查询中</span></div><div class="ip-map-empty">正在查询网络 IP…</div>${loc}</div>`;
+  }
+
+  const focus = ip || user;
   if (!focus) {
     return `<div class="ip-map"><div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">查询中</span></div><div class="ip-map-empty">取得经纬度后自动绘制</div>${loc}</div>`;
   }
+
   const coords = `${fmtLat(focus.lat)} ${fmtLon(focus.lon)}`;
   const key = `<span class="ip-map-key"><i></i>IP 归属地<i class="tri"></i>设备定位</span>`;
   const foot = `<div class="ip-map-foot">${key}<code>${esc(coords)}</code></div>`;
 
-  const cnGeo = isChinaGeo(geo);
-  const prov = (() => {
-    const byRegion = provinceFromGeo(geo);
-    if (byRegion) return byRegion;
-    if (!cnGeo) return null;
-    const atlas = provinceAtlasState();
-    return atlas.status === 'ready' ? provinceByPoint(focus.lat, focus.lon) : null;
-  })();
-  if (!prov && cnGeo && PROV_ATLAS.status === 'loading') {
-    const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">中国</span></div>`;
-    return `<div class="ip-map">${head}<div class="ip-map-empty">正在识别省份…</div>${foot}${loc}</div>`;
-  }
-  if (prov) {
-    const st = provinceState(prov);
-    const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">中国 · ${esc(prov.name)}</span></div>`;
-    if (st.status === 'ready') {
-      return `<div class="ip-map">${head}${provinceSvg(st, focus, ip, user)}${foot}${loc}</div>`;
+  if (isChinaGeo(geo)) {
+    ensureProvinceView();
+    const v = PROV_VIEW;
+    const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">中国${v.name ? ' · ' + esc(v.name) : ''}</span></div>`;
+    if (v.phase === 'ready' && v.geoRef === geo) {
+      return `<div class="ip-map">${head}${provinceSvg(v, focus, ip, user)}${foot}${loc}</div>`;
     }
-    if (st.status === 'loading') {
-      return `<div class="ip-map">${head}<div class="ip-map-empty">正在加载${esc(prov.name)}地图…</div>${foot}${loc}</div>`;
-    }
-    if (prov.adcode !== '710000') {
-      return `<div class="ip-map">${head}<div class="ip-map-empty">${esc(prov.name)}地图加载失败，点“刷新”重试</div>${foot}${loc}</div>`;
-    }
+    const msg = v.phase === 'error'
+      ? '省份地图加载失败，点“刷新”重试'
+      : v.phase === 'unknown'
+        ? '未能识别省份，点“刷新”重试'
+        : v.name ? `正在加载${v.name}地图…` : '正在识别省份…';
+    return `<div class="ip-map">${head}<div class="ip-map-empty">${esc(msg)}</div>${foot}${loc}</div>`;
   }
 
   const spot = locateLatLon(focus.lat, focus.lon);
-  let where = spot.name + (spot.near ? '（近海）' : '') + (spot.country ? ' · ' + spot.country : '');
-  if (cnGeo) where = PROV_ATLAS.status === 'error' ? '中国 · 省份地图加载失败' : '中国 · 省份未识别';
+  const where = spot.name + (spot.near ? '（近海）' : '') + (spot.country ? ' · ' + spot.country : '');
   const head = `<div class="ip-map-head"><b>位置地图</b><span class="ip-map-continent">${esc(where)}</span></div>`;
   return `<div class="ip-map">${head}${ipMapSvg(spot, focus, ip, user)}${foot}${loc}</div>`;
 }
