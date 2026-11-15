@@ -76,7 +76,8 @@ button.copy:hover{color:var(--accent);border-color:#c7d7f2;background:#f7faff}
 /* hero */
 .hero{border:1px solid var(--line);border-radius:14px;padding:24px 26px;background:var(--panel);margin-bottom:14px}
 .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,440px);gap:30px;align-items:start}
-h1{font-size:clamp(21px,2.4vw,28px);margin:6px 0 8px;line-height:1.25;letter-spacing:-.01em;font-weight:650}
+h1{font-size:clamp(21px,2.4vw,28px);margin:2px 0 6px;line-height:1.25;letter-spacing:-.01em;font-weight:650}
+.hero-sub{margin:0 0 10px;font-size:12px;line-height:1.6;color:var(--muted);max-width:56ch}
 .hero-grid>div:first-child>.hero-meta{margin-top:2px}
 .hero-meta{display:flex;flex-wrap:wrap;gap:7px;font-size:11px;color:var(--dim);align-items:center}
 .hero-meta span{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);max-width:100%;word-break:break-word}
@@ -151,12 +152,12 @@ button.ip-refresh.busy svg{animation:spin 1.1s linear infinite}
 .nav-tools button{padding:4px 8px;font-size:10.5px;background:var(--panel2)}
 
 /* cards */
-.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;margin:10px 0;overflow:hidden;scroll-margin-top:88px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden;scroll-margin-top:110px;box-shadow:0 1px 2px rgba(31,45,66,.03)}
 .card summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;list-style:none;user-select:none;transition:background .15s}
 .card summary::-webkit-details-marker{display:none}
 .card summary:hover{background:var(--panel2)}
 .sum-main{min-width:0;display:block}
-.title{display:block;font-size:14px;font-weight:600;color:var(--text);letter-spacing:.005em}
+.title{display:block;font-size:14.5px;font-weight:600;color:var(--text);letter-spacing:.005em}
 .desc{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.55}
 .sum-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .count{font-size:10px;color:var(--dim);background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap}
@@ -167,10 +168,11 @@ button.ip-refresh.busy svg{animation:spin 1.1s linear infinite}
 .rows{padding-top:2px}
 
 /* rows */
-.row{display:grid;grid-template-columns:minmax(160px,240px) minmax(0,1fr);gap:20px;padding:9px 0;border-top:1px dashed var(--line2);align-items:start}
+.row{display:grid;grid-template-columns:minmax(176px,250px) minmax(0,1fr);gap:20px;padding:9px 8px;margin:0 -8px;border-top:1px dashed var(--line2);align-items:start;border-radius:7px;transition:background .12s}
+.row:hover{background:#fafcff}
 .row:first-child{border-top:0}
 .row .k{min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:1px 8px}
-.label{display:inline;font-size:12.5px;color:#33404f;word-break:break-word}
+.label{display:inline;font-size:12.5px;color:#33404f;font-weight:500;word-break:break-word}
 .src{display:inline;font-size:9px;font-family:var(--mono);color:var(--dim);word-break:break-word;line-height:1.45;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:0 4px}
 .vcell{min-width:0;font-size:12.5px;line-height:1.65}
 .v{word-break:break-word;white-space:pre-wrap}
@@ -209,6 +211,15 @@ footer p{margin:3px 0}
 @media (min-width:1500px){
   .topbar-inner,.wrap{max-width:1440px}
 }
+/* 桌面端：分区卡片双列，缩短滚动长度；导航吸顶便于跳转 */
+@media (min-width:1180px){
+  .nav{position:sticky;top:53px;z-index:25;box-shadow:0 2px 10px rgba(31,45,66,.05)}
+  #sections{column-count:2;column-gap:14px}
+  .card{margin:0 0 12px;break-inside:avoid;page-break-inside:avoid}
+  .row{grid-template-columns:minmax(190px,260px) minmax(0,1fr);gap:24px}
+  .vcell{font-size:13px}
+  .ip-map{max-width:none}
+}
 @media (max-width:980px){
   .hero-grid{grid-template-columns:1fr;gap:18px}
   .ip-map .map-name{font-size:10px}
@@ -225,14 +236,25 @@ footer p{margin:3px 0}
   .wrap{padding:14px 12px 44px}
   .hero{padding:18px 15px;border-radius:12px}
   .stat-grid{grid-template-columns:repeat(2,1fr)}
-  .nav{flex-wrap:wrap;padding:7px 8px}
+  .nav{flex-wrap:wrap;padding:7px 8px;position:sticky;top:0;z-index:24;box-shadow:0 2px 8px rgba(31,45,66,.05)}
+  .card{scroll-margin-top:120px}
   .nav-tools{display:none}
   .card summary{padding:12px 14px}
   .sec-body{padding:0 14px 12px}
-  .row{grid-template-columns:1fr;gap:3px;padding:8px 0}
+  .row{grid-template-columns:1fr;gap:3px;padding:9px 6px;margin:0 -6px}
   .desc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 130px)}
   .mini .chip{flex:1 1 100%;justify-content:space-between}
   .hash-value{font-size:11px}
+  .ip-detail-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px 14px}
+}
+@media (max-width:420px){
+  .wrap{padding:12px 10px 40px}
+  .hero{padding:16px 13px}
+  h1{font-size:20px}
+  .stat{padding:8px 9px}
+  .card summary{padding:11px 12px}
+  .sec-body{padding:0 12px 10px}
+  .ip-map{padding:6px 7px 6px}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
@@ -792,11 +814,23 @@ function renderRow(r) {
 }
 
 function totalRows() {
-  return SEC_DEFS.reduce((n, d) => n + (STATE.get(d.id).rows.length || 0), 0);
+  return SEC_DEFS.reduce((n, d) => n + secRows(d.id).length, 0);
+}
+
+// 浏览器拿不到的值一律不展示：既不留「不可用」占位，也不补造内容
+const UNMEASURED = /^(不可用|不支持|未能|未获取|未收集|未识别|未返回|无法|无（|未知（|（空|—)/;
+function isMeasured(r) {
+  if (r.type === 'features') return Array.isArray(r.value) && r.value.length > 0;
+  if (r.value === null || r.value === undefined) return !!(r.rawText && !UNMEASURED.test(r.rawText));
+  if (typeof r.value === 'string') return !UNMEASURED.test(r.value.trim());
+  return true;
+}
+function secRows(id) {
+  return STATE.get(id).rows.filter(isMeasured);
 }
 
 function visibleDefs() {
-  return SEC_DEFS.filter((d) => STATE.get(d.id).rows.length > 0);
+  return SEC_DEFS.filter((d) => secRows(d.id).length > 0);
 }
 
 function formatDuration(ms) {
@@ -1030,6 +1064,8 @@ function renderHero() {
   $('#hero').innerHTML = `
     <div class="hero-grid">
       <div>
+        <h1>浏览器参数与网络位置报告</h1>
+        <p class="hero-sub">全部数据由当前浏览器接口实时读取；读取不到的项目不展示，也不使用推算值填充。</p>
         <div class="hero-meta">
           <span>${esc(gen)}</span>
           ${liveNote}
@@ -1067,7 +1103,7 @@ function renderNav() {
   nav.hidden = !visible.length;
   if (!visible.length) return;
   $('#nav-links').innerHTML = visible.map((d) => {
-    const n = STATE.get(d.id).rows.length;
+    const n = secRows(d.id).length;
     return `<a href="#sec-${d.id}" data-nav="${d.id}"><span>${esc(d.title)}</span><b>${n}</b></a>`;
   }).join('');
 }
@@ -1083,14 +1119,15 @@ function renderSections() {
   }
   host.innerHTML = visible.map((def) => {
     const st = STATE.get(def.id);
+    const rows = secRows(def.id);
     const open = UI.open.has(def.id) ? ' open' : '';
     const pending = st.done ? '' : '<span class="pending-dot" title="补充采集中"></span>';
     return `<details class="card" id="sec-${def.id}" data-sec="${def.id}"${open}>
       <summary>
         <span class="sum-main"><span class="title">${esc(def.title)}</span><span class="desc">${esc(def.desc)}</span></span>
-        <span class="sum-right">${pending}<span class="count">${st.rows.length} 项</span><span class="chev"></span></span>
+        <span class="sum-right">${pending}<span class="count">${rows.length} 项</span><span class="chev"></span></span>
       </summary>
-      <div class="sec-body"><div class="rows">${st.rows.map(renderRow).join('')}</div></div>
+      <div class="sec-body"><div class="rows">${rows.map(renderRow).join('')}</div></div>
     </details>`;
   }).join('');
   bindDetails();
@@ -1251,7 +1288,7 @@ function buildReport() {
         title: def.title,
         description: def.desc,
         done: st.done,
-        rows: st.rows.map((r) => ({
+        rows: secRows(def.id).map((r) => ({
           label: r.label,
           value: plain(r.value),
           source: r.source,
@@ -3163,10 +3200,53 @@ function ensureProvinceView() {
     });
 }
 
+// DataV 没有台湾的下级区划（710000_full.json 返回 404），这里用 ECharts 4 的公开地图数据补县市轮廓
+const EXTRA_BOUND = {
+  710000: 'https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/json/province/taiwan.json'
+};
+
+// ECharts 地图数据把坐标压成 UTF-8 增量编码字符串，按官方算法还原为经纬度
+function decodeMapJson(json) {
+  if (!json || !json.UTF8Encoding) return json;
+  const scale = json.UTF8Scale || 1024;
+  const ring = (encoded, offsets) => {
+    const out = [];
+    let prevX = offsets[0];
+    let prevY = offsets[1];
+    for (let i = 0; i < encoded.length; i += 2) {
+      let x = encoded.charCodeAt(i) - 64;
+      let y = encoded.charCodeAt(i + 1) - 64;
+      x = (x >> 1) ^ (-(x & 1));
+      y = (y >> 1) ^ (-(y & 1));
+      x += prevX;
+      y += prevY;
+      prevX = x;
+      prevY = y;
+      out.push([x / scale, y / scale]);
+    }
+    return out;
+  };
+  (json.features || []).forEach((f) => {
+    const g = f && f.geometry;
+    if (!g || !g.encodeOffsets) return;
+    if (g.type === 'Polygon') {
+      g.coordinates = g.coordinates.map((r, i) => ring(r, g.encodeOffsets[i]));
+    } else if (g.type === 'MultiPolygon') {
+      g.coordinates = g.coordinates.map((poly, i) => poly.map((r, j) => ring(r, g.encodeOffsets[i][j])));
+    }
+    delete g.encodeOffsets;
+  });
+  return json;
+}
+
 function loadProvinceInto(view, prov, token) {
   view.name = prov.name;
   view.adcode = prov.adcode;
-  fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/' + prov.adcode + '_full.json', 12000)
+  const bound = (suffix) => fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/' + prov.adcode + suffix + '.json', 12000);
+  const extra = EXTRA_BOUND[prov.adcode];
+  bound('_full')
+    .catch(() => (extra ? fetchJSON(extra, 12000).then(decodeMapJson) : Promise.reject(new Error('no detail'))))
+    .catch(() => bound(''))
     .then((data) => {
       if (token !== PROV_TOKEN) return;
       buildProvince(view, data, IPSTATE.geo);
@@ -3227,6 +3307,30 @@ function ringAreaLatLon(ring) {
   return s / 2;
 }
 
+// 数据源未提供质心时用最大外环的外接矩形中心作标注锚点（取环首点会贴到边界上）
+function ringAnchor(rings) {
+  let best = null;
+  let bestArea = -1;
+  for (const ring of rings) {
+    let x0 = Infinity;
+    let x1 = -Infinity;
+    let y0 = Infinity;
+    let y1 = -Infinity;
+    for (const [lon, lat] of ring) {
+      if (lon < x0) x0 = lon;
+      if (lon > x1) x1 = lon;
+      if (lat < y0) y0 = lat;
+      if (lat > y1) y1 = lat;
+    }
+    const a = (x1 - x0) * (y1 - y0);
+    if (a > bestArea) {
+      bestArea = a;
+      best = [(x0 + x1) / 2, (y0 + y1) / 2];
+    }
+  }
+  return best;
+}
+
 function buildProvince(st, geoData, focus) {
   const feats = (geoData && geoData.features) || [];
   const cities = [];
@@ -3257,7 +3361,7 @@ function buildProvince(st, geoData, focus) {
     if (!rings.length) return;
     const props = f.properties || {};
     const c = props.centroid || props.center;
-    cities.push({ name: String(props.name || ''), rings, area, at: c ? [c[0], c[1]] : rings[0][0] });
+    cities.push({ name: String(props.name || ''), rings, area, at: c ? [c[0], c[1]] : ringAnchor(rings) });
   });
   if (!cities.length) throw new Error('no cities');
 
@@ -3344,7 +3448,7 @@ function provinceLabelHtml(st, limit, fs, focus) {
   for (const c of order) {
     if (placed >= limit) break;
     const [x, y] = st.project(c.at[0], c.at[1]);
-    const name = c.name.replace(/(市|地区|自治州|盟|区|县|旗)$/, '');
+    const name = c.name.replace(/(市|地区|自治州|盟|区|县|旗|省|特别行政区)$/, '');
     const w = [...name].reduce((n, ch) => n + glyphWidth(ch), 0) * fs;
     const left = x - w / 2 - 1;
     const right = x + w / 2 + 1;
