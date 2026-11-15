@@ -2474,6 +2474,15 @@ const geoComplete = (g) => Number.isFinite(g.lat) && Number.isFinite(g.lon)
   && !!(g.isp || g.org || g.asn)
   && !!(g.country || g.region || g.city);
 
+// ipinfo.io 把 ISO 国家码放在 country 字段且不返回 country_code，
+// 下游（中国区判定、运营商校正、区级展示）统一按 country_code 判断，这里补齐一次。
+function normalizeGeo(g) {
+  if (!g || typeof g !== 'object' || g.country_code) return g;
+  const c = String(g.country || '').trim();
+  if (/^[A-Za-z]{2,3}$/.test(c)) g.country_code = c.toUpperCase();
+  return g;
+}
+
 function raceGeo(signal) {
   return new Promise((resolve) => {
     let left = GEO_SOURCES.length;
@@ -2707,6 +2716,7 @@ async function fetchGeoOnce(gen) {
     const found = await raceGeo(ctrl.signal);
     ctrl.abort();
     if (!found || gen !== ipGen) return;
+    normalizeGeo(found);
     IPSTATE.geo = found;
     applyCarrier(found);
     if (found.ip && !hasPublicIp()) {
@@ -3159,7 +3169,7 @@ function loadProvinceInto(view, prov, token) {
   fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/' + prov.adcode + '_full.json', 12000)
     .then((data) => {
       if (token !== PROV_TOKEN) return;
-      buildProvince(view, data);
+      buildProvince(view, data, IPSTATE.geo);
       view.phase = 'ready';
       scheduleRender();
     })
@@ -3217,7 +3227,7 @@ function ringAreaLatLon(ring) {
   return s / 2;
 }
 
-function buildProvince(st, geoData) {
+function buildProvince(st, geoData, focus) {
   const feats = (geoData && geoData.features) || [];
   const cities = [];
   let lonMin = Infinity;
@@ -3250,6 +3260,14 @@ function buildProvince(st, geoData) {
     cities.push({ name: String(props.name || ''), rings, area, at: c ? [c[0], c[1]] : rings[0][0] });
   });
   if (!cities.length) throw new Error('no cities');
+
+  // 焦点（IP 精确坐标）落在省界外时并入取景范围，避免十字线与标注点被画到画布外
+  if (focus && Number.isFinite(focus.lat) && Number.isFinite(focus.lon)) {
+    lonMin = Math.min(lonMin, focus.lon);
+    lonMax = Math.max(lonMax, focus.lon);
+    latMin = Math.min(latMin, focus.lat);
+    latMax = Math.max(latMax, focus.lat);
+  }
 
   const kLon = Math.cos(((latMin + latMax) / 2) * Math.PI / 180);
   const rawW = Math.max(0.5, (lonMax - lonMin) * kLon);
@@ -3365,17 +3383,24 @@ function provinceSvg(st, focus, ip, user) {
       return `<polygon points="${p[0]},${p[1] - 4.6} ${p[0] + 3.8},${p[1] + 3} ${p[0] - 3.8},${p[1] + 3}" fill="#4b8f6b" stroke="#fff" stroke-width=".9" stroke-linejoin="round"/>`;
     })()
     : '';
-  return `<svg viewBox="0 0 ${st.W} ${st.H}" role="img" aria-label="${esc(st.name)}地图，当前经纬度 ${fmtLat(focus.lat)} ${fmtLon(focus.lon)}">
-    <defs><clipPath id="prov-clip"><rect x="0" y="0" width="${st.W}" height="${st.H}"/></clipPath></defs>
-    <rect x="0" y="0" width="${st.W}" height="${st.H}" fill="#f4f8fd"/>
+  // 焦点落在省界外（IP 库坐标与归属地不一致、或仅有设备定位）时，把可视区扩到包含焦点，
+  // 保证纵横坐标线与 IP 精确点不被裁掉，标注方式与全球视图一致。
+  const pad = 8;
+  const vx = Math.min(0, x - pad);
+  const vy = Math.min(0, y - pad);
+  const vw = Math.max(st.W, x + pad) - vx;
+  const vh = Math.max(st.H, y + pad) - vy;
+  return `<svg viewBox="${vx} ${vy} ${vw} ${vh}" role="img" aria-label="${esc(st.name)}地图，当前经纬度 ${fmtLat(focus.lat)} ${fmtLon(focus.lon)}">
+    <defs><clipPath id="prov-clip"><rect x="${vx}" y="${vy}" width="${vw}" height="${vh}"/></clipPath></defs>
+    <rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="#f4f8fd"/>
     <g clip-path="url(#prov-clip)">
       ${st.grid}
       ${shapes}
       ${labels}
       ${st.gridLabels}
     </g>
-    <line x1="${x}" y1="0" x2="${x}" y2="${st.H}" stroke="#3f6fd8" stroke-width=".8" stroke-dasharray="2.5 2.5" opacity=".6"/>
-    <line x1="0" y1="${y}" x2="${st.W}" y2="${y}" stroke="#3f6fd8" stroke-width=".8" stroke-dasharray="2.5 2.5" opacity=".6"/>
+    <line x1="${x}" y1="${vy}" x2="${x}" y2="${vy + vh}" stroke="#3f6fd8" stroke-width=".8" stroke-dasharray="2.5 2.5" opacity=".6"/>
+    <line x1="${vx}" y1="${y}" x2="${vx + vw}" y2="${y}" stroke="#3f6fd8" stroke-width=".8" stroke-dasharray="2.5 2.5" opacity=".6"/>
     ${ipMark}
     ${userMark}
   </svg>`;
