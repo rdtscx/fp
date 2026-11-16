@@ -83,7 +83,6 @@ h1{font-size:clamp(21px,2.4vw,28px);margin:2px 0 6px;line-height:1.25;letter-spa
 .hero-grid>div:first-child>.hero-meta{margin-top:2px}
 .hero-meta{display:flex;flex-wrap:wrap;gap:7px;font-size:11px;color:var(--dim);align-items:center}
 .hero-meta span{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);max-width:100%;word-break:break-word}
-.live-pill{color:#3f8060!important;border-color:#d9ebdf!important;background:#f4faf6!important}
 .fingerprint-card{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:15px 16px}
 .hash-row{padding:9px 0;border-top:1px dashed var(--line)}
 .hash-row:first-child{border-top:0;padding-top:0}
@@ -991,8 +990,8 @@ function renderHero() {
 
   const total = totalRows();
   const liveNote = UI.status === 'done'
-    ? `<span class="live-pill">实时更新</span><span>${total} 项 · ${formatDuration(META.durationMs)}</span>`
-    : `<span class="live-pill">实时更新</span><span>采集中 · ${total} 项</span>`;
+    ? `<span>${total} 项 · ${formatDuration(META.durationMs)}</span>`
+    : `<span>采集中 · ${total} 项</span>`;
 
   const hashBlock = (label, val, primary) => {
     const body = val
