@@ -78,7 +78,6 @@ button.copy:hover{color:var(--accent);border-color:#c7d7f2;background:#f7faff}
 /* hero */
 .hero{border:1px solid var(--line);border-radius:14px;padding:24px 26px;background:var(--panel);margin-bottom:14px}
 .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,440px);gap:30px;align-items:start}
-h1{font-size:clamp(21px,2.4vw,28px);margin:2px 0 6px;line-height:1.25;letter-spacing:-.01em;font-weight:650}
 .hero-sub{margin:0 0 10px;font-size:12px;line-height:1.6;color:var(--muted);max-width:56ch}
 .hero-grid>div:first-child>.hero-meta{margin-top:2px}
 .hero-meta{display:flex;flex-wrap:wrap;gap:7px;font-size:11px;color:var(--dim);align-items:center}
@@ -249,7 +248,6 @@ footer p{margin:3px 0}
 @media (max-width:420px){
   .wrap{padding:12px 10px 40px}
   .hero{padding:16px 13px}
-  h1{font-size:20px}
   .stat{padding:8px 9px}
   .card summary{padding:11px 12px}
   .sec-body{padding:0 12px 10px}
@@ -1063,7 +1061,6 @@ function renderHero() {
   $('#hero').innerHTML = `
     <div class="hero-grid">
       <div>
-        <h1>浏览器参数与网络位置报告</h1>
         <p class="hero-sub">数据由当前浏览器接口实时读取</p>
         <div class="hero-meta">
           <span>${esc(gen)}</span>
