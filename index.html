@@ -126,10 +126,12 @@ button.ip-refresh.busy svg{animation:spin 1.1s linear infinite}
 .ip-map-foot code{font-family:var(--mono);font-size:10px;color:#33507a}
 .ip-map-key{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
 .ip-map-key i{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;flex:none}
-.ip-map-key i.tri,.ip-map-loc i{width:0;height:0;border-radius:0;background:none;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:7px solid var(--ok);margin-left:6px}
-.ip-map-key i.tri:first-child,.ip-map-loc i{margin-left:0}
+.ip-map-key i.tri,.ip-map-loc i,.ip-map-denied i{width:0;height:0;border-radius:0;background:none;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:7px solid var(--ok);margin-left:6px}
+.ip-map-key i.tri:first-child,.ip-map-loc i,.ip-map-denied i{margin-left:0}
 .ip-map-loc{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:10px;color:var(--muted)}
 .ip-map-loc i.off{border-bottom-color:var(--na)}
+.ip-map-denied{display:flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:7px;background:#fdf1f1;border:1px solid #f0d4d4;color:#a8443c;font-size:11px;font-weight:600}
+.ip-map-denied i{border-bottom-color:#d96a5e}
 .ip-map-addr{align-items:flex-start;color:#33404f}
 .ip-map-addr b{flex:none;font-size:9.5px;letter-spacing:.06em;color:var(--dim);font-weight:600;line-height:1.9}
 .ip-map-addr span{line-height:1.6;word-break:break-word}
@@ -2821,7 +2823,7 @@ function requestUserLocation() {
     },
     (e) => {
       USERLOC.state = 'error';
-      USERLOC.err = e && e.code === 1 ? '已拒绝授权' : e && e.code === 3 ? '定位超时' : '定位不可用';
+      USERLOC.err = e && e.code === 1 ? '定位被拒' : e && e.code === 3 ? '定位超时' : '定位不可用';
       scheduleRender();
     },
     { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
@@ -3087,8 +3089,10 @@ function userLocNote(u) {
       : '';
     return `<div class="ip-map-loc"><i></i>设备定位：${esc(fmtLat(u.lat))} ${esc(fmtLon(u.lon))}${esc(acc)}</div>${addrLine}`;
   }
-  const text = USERLOC.state === 'pending' ? '设备定位：请求中…'
-    : USERLOC.state === 'error' ? `设备定位：${USERLOC.err}` : '';
+  if (USERLOC.state === 'error') {
+    return `<div class="ip-map-denied"><i></i>${esc(USERLOC.err)}</div>`;
+  }
+  const text = USERLOC.state === 'pending' ? '设备定位：请求中…' : '';
   return text ? `<div class="ip-map-loc"><i class="off"></i>${esc(text)}</div>` : '';
 }
 
