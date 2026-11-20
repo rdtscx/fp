@@ -3133,11 +3133,14 @@ function provinceFromGeo(geo) {
   if (cc === 'MO') return { name: '澳门', adcode: '820000' };
   if (cc === 'TW') return { name: '台湾', adcode: '710000' };
   if (!isChinaGeo(geo)) return null;
-  const region = String(geo.region || '') + ' ' + String(geo.city || '');
-  let name = null;
-  const hit = CN_PROVINCES.find(([en]) => new RegExp('\\b' + en + '\\b', 'i').test(region));
-  if (hit) name = hit[1];
-  if (!name) name = Object.keys(PROVINCE_ADCODE).find((n) => region.includes(n)) || null;
+  // 省级 region 优先于市级 city：青海海南藏族自治州的 city=Hainan 不应命中海南省
+  const regionText = String(geo.region || '');
+  const cityText = String(geo.city || '');
+  const englishHit = (text) => CN_PROVINCES.find(([en]) => new RegExp('\\b' + en + '\\b', 'i').test(text));
+  const chineseHit = (text) => Object.keys(PROVINCE_ADCODE).find((n) => text.includes(n));
+  const hit = englishHit(regionText) || englishHit(cityText);
+  let name = hit ? hit[1] : null;
+  if (!name) name = chineseHit(regionText) || chineseHit(cityText) || null;
   const adcode = name ? PROVINCE_ADCODE[name] : null;
   return adcode ? { name, adcode } : null;
 }
@@ -3219,9 +3222,15 @@ function ensureProvinceView() {
     });
 }
 
-// DataV 没有台湾的下级区划（710000_full.json 返回 404），这里用 ECharts 4 的公开地图数据补县市轮廓
+// DataV 没有台湾的下级区划（710000_full.json 返回 404），用 ECharts 4 的公开地图数据补县市轮廓；
+// cdn.jsdelivr.net 在部分网络不可达，按可达性依次回退到 fastly/gcore 节点与 unpkg
 const EXTRA_BOUND = {
-  710000: 'https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/json/province/taiwan.json'
+  710000: [
+    'https://fastly.jsdelivr.net/npm/echarts@4.9.0/map/json/province/taiwan.json',
+    'https://gcore.jsdelivr.net/npm/echarts@4.9.0/map/json/province/taiwan.json',
+    'https://unpkg.com/echarts@4.9.0/map/json/province/taiwan.json',
+    'https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/json/province/taiwan.json'
+  ]
 };
 
 // ECharts 地图数据把坐标压成 UTF-8 增量编码字符串，按官方算法还原为经纬度
@@ -3262,9 +3271,15 @@ function loadProvinceInto(view, prov, token) {
   view.name = prov.name;
   view.adcode = prov.adcode;
   const bound = (suffix) => fetchJSON('https://geo.datav.aliyun.com/areas_v3/bound/' + prov.adcode + suffix + '.json', 12000);
-  const extra = EXTRA_BOUND[prov.adcode];
+  const extras = EXTRA_BOUND[prov.adcode] || [];
   bound('_full')
-    .catch(() => (extra ? fetchJSON(extra, 12000).then(decodeMapJson) : Promise.reject(new Error('no detail'))))
+    .catch(() => {
+      if (!extras.length) throw new Error('no detail');
+      return extras.reduce(
+        (p, url) => p.catch(() => fetchJSON(url, 12000).then(decodeMapJson)),
+        Promise.reject(new Error('no extra detail'))
+      );
+    })
     .catch(() => bound(''))
     .then((data) => {
       if (token !== PROV_TOKEN) return;
