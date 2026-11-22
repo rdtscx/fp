@@ -97,6 +97,8 @@ button.copy:hover{color:var(--accent);border-color:#c7d7f2;background:#f7faff}
 .ip-detail-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .ip-detail-title{font-size:10.5px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
 .ip-detail-addr{font-family:var(--mono);font-size:13px;color:#33507a;word-break:break-all}
+.ip-addr{color:#33507a;text-decoration:none;cursor:pointer;word-break:break-all}
+.ip-addr:hover{text-decoration:underline}
 .ip-type,.ip-source{font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 7px;background:#fff}
 .ip-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:9px 20px;margin-top:11px}
 .ip-detail-item{min-width:0;display:flex;flex-direction:column;gap:1px}
@@ -973,6 +975,11 @@ function renderHero() {
   const ipv4 = (typeof IPSTATE.v4 === 'string' && isIPv4(IPSTATE.v4)) ? IPSTATE.v4 : null;
   const ipv6 = (typeof IPSTATE.v6 === 'string' && isIPv6(IPSTATE.v6)) ? IPSTATE.v6 : null;
   const ipMain = ipv4 || ipv6 || '查询中';
+  const IP_LOOKUP_URL = 'https://www.iptoushi.com/';
+  const ipAddrLink = (v, extraCls) => {
+    if (!v) return null;
+    return `<a class="ip-addr${extraCls ? ' ' + extraCls : ''}" href="${IP_LOOKUP_URL}" target="_blank" rel="noopener">${esc(v)}</a>`;
+  };
   const stats = [
     ['浏览器', SUMMARY.browser],
     ['内核', SUMMARY.engine],
@@ -1043,7 +1050,7 @@ function renderHero() {
     <div class="ip-detail">
       <div class="ip-detail-head">
         <span class="ip-detail-title">网络IP</span>
-        <code class="ip-detail-addr">${esc(ipMain)}</code>
+        ${ipAddrLink(ipv4 || ipv6, 'ip-detail-addr') || `<code class="ip-detail-addr">${esc(ipMain)}</code>`}
         <span class="ip-type">${esc(geo && geo.type ? geo.type : (ipv4 ? 'IPv4' : ipv6 ? 'IPv6' : '待定'))}</span>
         ${geo && geo.source ? `<span class="ip-source">${esc(geo.source)}</span>` : ''}
         ${geo && geo.rev ? `<span class="ip-source">区/街道：${esc(geo.rev)}</span>` : ''}
@@ -1069,7 +1076,7 @@ function renderHero() {
           ${liveNote}
         </div>
         <div class="stat-grid">
-          ${stats.map(([k, v]) => `<div class="stat${k === '网络IP' ? ' stat-ip' : ''}"><b>${esc(k)}</b><span>${esc(v || '—')}</span></div>`).join('')}
+          ${stats.map(([k, v]) => `<div class="stat${k === '网络IP' ? ' stat-ip' : ''}"><b>${esc(k)}</b><span>${k === '网络IP' && (ipv4 || ipv6) ? (ipAddrLink(v) || esc(v || '—')) : esc(v || '—')}</span></div>`).join('')}
         </div>
         ${ipDetail}
       </div>
